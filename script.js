@@ -1,6 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- KHAI BÁO BIẾN ---
-    const pages = document.querySelectorAll('.page');
+    // --- BƯỚC QUAN TRỌNG: DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
+    authDomain: "quanlylophoc-5b945.firebaseapp.com",
+    projectId: "quanlylophoc-5b945",
+    storageBucket: "quanlylophoc-5b945.firebasestorage.app",
+    messagingSenderId: "38123679904",
+    appId: "1:38123679904:web:f5db197b9315144643d9c5"
+    };
+
+    // --- KHỞI TẠO FIREBASE ---
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // --- KHAI BÁO BIẾN GIAO DIỆN ---
+    const loginPage = document.getElementById('login-page');
+    const appContent = document.getElementById('app-content');
+    const userInfo = document.getElementById('user-info');
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const pages = document.querySelectorAll('#app-content .page');
     const classForm = document.getElementById('class-form');
     const formTitle = document.getElementById('form-title');
     const formSubmitBtn = document.getElementById('form-submit-btn');
@@ -12,9 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteModal = document.getElementById('delete-confirm-modal');
     const btnConfirmDelete = document.getElementById('btn-confirm-delete');
     const btnCancelDelete = document.getElementById('btn-cancel-delete');
-
+    
     let allClasses = [];
     let currentScheduleData = [];
+    let currentUser = null;
     let editingClassId = null;
     let deletingClassId = null;
 
@@ -22,17 +43,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
     const REVIEW_OFFSETS = [1, 3, 6, 10];
 
-    // --- QUẢN LÝ DỮ LIỆU ---
-    const saveClassesToStorage = () => localStorage.setItem('teacherApp_classes', JSON.stringify(allClasses));
-    const loadClassesFromStorage = () => {
-        const storedClasses = localStorage.getItem('teacherApp_classes');
-        allClasses = storedClasses ? JSON.parse(storedClasses) : [];
-    };
+    // --- XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT ---
+    btnGoogleLogin.addEventListener('click', () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => console.error("Lỗi đăng nhập Google:", error));
+    });
 
-    // --- ĐIỀU HƯỚNG & MODAL ---
-    const showPage = (pageId) => pages.forEach(p => p.style.display = p.id === pageId ? 'block' : 'none');
-    const showDeleteModal = () => deleteModal.style.display = 'flex';
-    const hideDeleteModal = () => deleteModal.style.display = 'none';
+    btnLogout.addEventListener('click', () => auth.signOut());
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            loginPage.style.display = 'none';
+            appContent.style.display = 'block';
+            userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
+            loadClassesFromFirestore().then(() => {
+                showPage('home-page');
+            });
+        } else {
+            currentUser = null;
+            loginPage.style.display = 'block';
+            appContent.style.display = 'none';
+        }
+    });
+
+    // --- TƯƠNG TÁC VỚI FIRESTORE ---
+    const getClassesRef = () => db.collection('users').doc(currentUser.uid).collection('classes');
+
+    const loadClassesFromFirestore = async () => {
+        if (!currentUser) return;
+        try {
+            const snapshot = await getClassesRef().orderBy("name").get();
+            allClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) { console.error("Lỗi tải danh sách lớp:", error); }
+    };
 
     // --- HIỂN THỊ DỮ LIỆU ---
     const renderClassList = () => {
@@ -66,14 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const LESSONS = Array.from({ length: numUnits * 2 }, (_, i) => `Unit ${Math.floor(i / 2) + 1} lesson ${i % 2 + 1}`);
         const scheduleDays = CLASS_SCHEDULE_DAYS[classType];
         let currentDate = new Date(startDateStr + 'T00:00:00');
-        while (!scheduleDays.includes(currentDate.getDay())) {
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
+        while (!scheduleDays.includes(currentDate.getDay())) currentDate.setDate(currentDate.getDate() + 1);
         const allSessionDates = [];
         while (allSessionDates.length < LESSONS.length + REVIEW_OFFSETS[REVIEW_OFFSETS.length - 1]) {
-            if (scheduleDays.includes(currentDate.getDay())) {
-                allSessionDates.push(new Date(currentDate.getTime()));
-            }
+            if (scheduleDays.includes(currentDate.getDay())) allSessionDates.push(new Date(currentDate.getTime()));
             currentDate.setDate(currentDate.getDate() + 1);
         }
         const scheduleData = [];
@@ -117,7 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
         lookupSummary.innerHTML = summaryHTML;
     }
 
-    // --- GÁN SỰ KIỆN ---
+    // --- ĐIỀU HƯỚNG & SỰ KIỆN ---
+    const showPage = (pageId) => pages.forEach(p => p.style.display = p.id === pageId ? 'block' : 'none');
+    const showDeleteModal = () => deleteModal.style.display = 'flex';
+    const hideDeleteModal = () => deleteModal.style.display = 'none';
+
     document.getElementById('btn-show-create-form').addEventListener('click', () => {
         editingClassId = null;
         formTitle.textContent = '➕ Tạo Lớp Học Mới';
@@ -127,106 +171,5 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('start-date').valueAsDate = new Date();
         showPage('form-page');
     });
-    document.getElementById('btn-show-class-list').addEventListener('click', () => {
-        renderClassList();
-        showPage('class-list-page');
-    });
-
-    document.querySelectorAll('.back-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetPage = e.target.dataset.target;
-            if (targetPage === 'class-list-page') renderClassList();
-            showPage(targetPage);
-        });
-    });
-
-    classForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const className = document.getElementById('class-name').value;
-        const numUnits = document.getElementById('num-units').value;
-        const classType = document.getElementById('class-type').value;
-        const startDate = document.getElementById('start-date').value;
-
-        if (!className.trim() || !startDate || !numUnits) {
-            document.getElementById('form-error-message').textContent = 'Vui lòng điền đầy đủ thông tin!';
-            return;
-        }
-
-        if (editingClassId) {
-            const classIndex = allClasses.findIndex(cls => cls.id === editingClassId);
-            if (classIndex > -1) {
-                allClasses[classIndex] = { ...allClasses[classIndex], name: className, numUnits, type: classType, startDate };
-            }
-        } else {
-            const newClass = { id: Date.now(), name: className, numUnits, type: classType, startDate };
-            allClasses.push(newClass);
-        }
-        
-        saveClassesToStorage();
-        classForm.reset();
-        editingClassId = null;
-        renderClassList();
-        showPage('class-list-page');
-    });
-
-    classListContainer.addEventListener('click', (e) => {
-        const classInfo = e.target.closest('.class-info');
-        const editBtn = e.target.closest('.edit-btn');
-        const deleteBtn = e.target.closest('.delete-btn');
-
-        if (deleteBtn) {
-            deletingClassId = Number(deleteBtn.dataset.id);
-            showDeleteModal();
-        } else if (editBtn) {
-            const classId = Number(editBtn.dataset.id);
-            const selectedClass = allClasses.find(cls => cls.id === classId);
-            if (selectedClass) {
-                editingClassId = classId;
-                document.getElementById('class-name').value = selectedClass.name;
-                document.getElementById('num-units').value = selectedClass.numUnits;
-                document.getElementById('class-type').value = selectedClass.type;
-                document.getElementById('start-date').value = selectedClass.startDate;
-                formTitle.textContent = '⚙️ Thiết Lập Thông Tin Lớp Học';
-                formSubmitBtn.textContent = 'Lưu Thay Đổi';
-                showPage('form-page');
-            }
-        } else if (classInfo) {
-            const classId = Number(classInfo.dataset.id);
-            const selectedClass = allClasses.find(cls => cls.id === classId);
-            if (selectedClass) {
-                scheduleClassName.textContent = `🗓️ Lịch Học Chi Tiết - Lớp ${selectedClass.name}`;
-                currentScheduleData = generateSchedule(selectedClass.startDate, selectedClass.type, selectedClass.numUnits);
-                displaySchedule(currentScheduleData);
-                lookupDateInput.value = '';
-                lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
-                showPage('schedule-details-page');
-            }
-        }
-    });
-
-    lookupDateInput.addEventListener('change', () => {
-        if (!lookupDateInput.value) {
-            lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
-            return;
-        }
-        const selectedDate = new Date(lookupDateInput.value + 'T00:00:00');
-        showSummaryForDate(formatDate(selectedDate));
-    });
-
-    btnConfirmDelete.addEventListener('click', () => {
-        allClasses = allClasses.filter(cls => cls.id !== deletingClassId);
-        saveClassesToStorage();
-        renderClassList();
-        hideDeleteModal();
-    });
-    btnCancelDelete.addEventListener('click', hideDeleteModal);
-
-    // --- KHỞI CHẠY ỨNG DỤNG ---
-    function initialize() {
-        loadClassesFromStorage();
-        showPage('home-page');
-    }
-
-    initialize();
-});
+    
+    document.getElementById('btn-show-class
