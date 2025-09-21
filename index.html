@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Lớp Học</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+
+    <div id="app">
+
+        <div id="home-page" class="page container">
+            <header>
+                <h1>🎓 Hệ Thống Quản Lý Lớp Học</h1>
+                <p>Chào mừng giáo viên quay trở lại!</p>
+            </header>
+            <main class="home-buttons">
+                <button id="btn-show-create-form">➕ Tạo Lớp Học Mới</button>
+                <button id="btn-show-class-list">📚 Xem Các Lớp Hiện Có</button>
+            </main>
+        </div>
+
+        <div id="form-page" class="page container" style="display:none;">
+            <header>
+                <h1 id="form-title">Tạo Lớp Học Mới</h1>
+                <a href="#" class="back-link" data-target="home-page">&larr; Quay lại trang chủ</a>
+            </header>
+            <main>
+                <form id="class-form" class="controls">
+                    <div class="control-group">
+                        <label for="class-name">Tên lớp (ví dụ: Movers K15)</label>
+                        <input type="text" id="class-name" required>
+                    </div>
+                    <div class="control-group">
+                        <label for="num-units">Số lượng Unit (ví dụ: 20)</label>
+                        <input type="number" id="num-units" required min="1" value="20">
+                    </div>
+                    <div class="control-group">
+                        <label for="class-type">Chọn mô hình lớp học:</label>
+                        <select id="class-type">
+                            <option value="2-4">Lớp thứ 2 - 4</option>
+                            <option value="3-5">Lớp thứ 3 - 5</option>
+                            <option value="4-6">Lớp thứ 4 - 6</option>
+                            <option value="7-cn">Lớp thứ 7 - CN</option>
+                            <option value="2-4-6">Lớp thứ 2 - 4 - 6</option>
+                            <option value="3-5-7">Lớp thứ 3 - 5 - 7</option>
+                        </select>
+                    </div>
+                     <div class="control-group">
+                        <label for="start-date">Chọn ngày khai giảng:</label>
+                        <input type="date" id="start-date" required>
+                    </div>
+                    <button type="submit" id="form-submit-btn">Tạo Lớp</button>
+                </form>
+                <div id="form-error-message" class="error"></div>
+            </main>
+        </div>
+
+        <div id="class-list-page" class="page container" style="display:none;">
+            <header>
+                <h1>📚 Các Lớp Hiện Có</h1>
+                <a href="#" class="back-link" data-target="home-page">&larr; Quay lại trang chủ</a>
+            </header>
+            <main id="class-list-container">
+                </main>
+        </div>
+        
+        <div id="schedule-details-page" class="page container result-container" style="display:none;">
+            <header>
+                <h1 id="schedule-class-name">🗓️ Lịch Học Chi Tiết</h1>
+                <a href="#" class="back-link" data-target="class-list-page">&larr; Quay lại danh sách lớp</a>
+            </header>
+            <main>
+                <div class="lookup-wrapper">
+                    <label for="lookup-date">📅 **Tra cứu nhanh theo ngày:**</label>
+                    <input type="date" id="lookup-date">
+                    <div id="lookup-summary"><p>Chọn một ngày để xem tóm tắt.</p></div>
+                </div>
+                <h2 class="table-title">Bảng Lịch Chi Tiết</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Buổi</th><th>Bài học</th><th>Ngày học</th><th>Ôn lần 1</th><th>Ôn lần 2</th><th>Ôn lần 3</th><th>Ôn lần 4</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-body"></tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+
+        <div id="delete-confirm-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3>Xác nhận xóa</h3>
+                <p>Bạn có chắc chắn muốn xóa lớp học này không? Hành động này không thể hoàn tác.</p>
+                <div class="modal-actions">
+                    <button id="btn-confirm-delete" class="btn-danger">Có, xóa lớp</button>
+                    <button id="btn-cancel-delete" class="btn-secondary">Không, giữ lại</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
