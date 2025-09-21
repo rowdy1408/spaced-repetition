@@ -1,114 +1,276 @@
-/* --- THIẾT LẬP TỔNG THỂ --- */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap');
+document.addEventListener('DOMContentLoaded', () => {
+    // --- BƯỚC QUAN TRỌNG: DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY ---
+    const firebaseConfig = {
+    apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
+    authDomain: "quanlylophoc-5b945.firebaseapp.com",
+    projectId: "quanlylophoc-5b945",
+    storageBucket: "quanlylophoc-5b945.firebasestorage.app",
+    messagingSenderId: "38123679904",
+    appId: "1:38123679904:web:abe3710093b5a09643d9c5"
+  };
 
-body {
-    font-family: 'Be Vietnam Pro', sans-serif;
-    color: #3a3a3a;
-    margin: 0;
-    background-image: url("images\z6427037259685_8a40e6594c276e06c4a6cbeb8c07ca24.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 100vh;
-    padding: 40px 20px;
-    box-sizing: border-box;
-}
+    // --- KHỞI TẠO FIREBASE ---
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-/* --- ĐỊNH DẠNG KHUNG CHỨA --- */
-.container {
-    width: 100%;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(5px);
-    padding: 30px 40px;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(14, 21, 47, 0.08);
-    box-sizing: border-box;
-    transition: all 0.3s ease-in-out;
-    margin-bottom: 20px;
-}
-#login-page, #home-page, #form-page, #class-list-page, #user-bar {
-    max-width: 800px;
-}
-#schedule-details-page {
-    max-width: 1200px;
-}
+    // --- KHAI BÁO BIẾN GIAO DIỆN ---
+    const loginPage = document.getElementById('login-page');
+    const appContent = document.getElementById('app-content');
+    const userInfo = document.getElementById('user-info');
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const pages = document.querySelectorAll('#app-content .page');
+    const classForm = document.getElementById('class-form');
+    const formTitle = document.getElementById('form-title');
+    const formSubmitBtn = document.getElementById('form-submit-btn');
+    const classListContainer = document.getElementById('class-list-container');
+    const scheduleClassName = document.getElementById('schedule-class-name');
+    const scheduleBody = document.getElementById('schedule-body');
+    const lookupDateInput = document.getElementById('lookup-date');
+    const lookupSummary = document.getElementById('lookup-summary');
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+    const btnCancelDelete = document.getElementById('btn-cancel-delete');
+    
+    let allClasses = [];
+    let currentScheduleData = [];
+    let currentUser = null;
+    let editingClassId = null;
+    let deletingClassId = null;
 
-/* --- TRANG ĐĂNG NHẬP VÀ THANH USER --- */
-.login-container { text-align: center; padding: 20px 0; }
-#btn-google-login {
-    display: inline-flex;
-    align-items: center;
-    padding: 12px 24px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    background-color: white;
-    font-size: 1.1em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-#btn-google-login:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-#btn-google-login img { width: 20px; height: 20px; margin-right: 12px; }
-#user-bar { display: flex; justify-content: space-between; align-items: center; }
+    // --- CẤU HÌNH LỊCH HỌC ---
+    const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
+    const REVIEW_OFFSETS = [1, 3, 6, 10];
 
-/* --- TIÊU ĐỀ --- */
-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e9ecef; }
-header h1 { font-size: 2em; color: #0056b3; margin: 0 0 10px 0; }
-header p { color: #6c757d; font-size: 1.1em; }
+    // --- XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT ---
+    btnGoogleLogin.addEventListener('click', () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => console.error("Lỗi đăng nhập Google:", error));
+    });
 
-/* --- TRANG CHỦ --- */
-.home-buttons { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-.home-buttons button { padding: 20px; font-size: 1.2em; font-weight: 700; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s ease; }
-.home-buttons button:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-#btn-show-create-form { background-color: #007bff; color: white; }
-#btn-show-class-list { background-color: #f8f9fa; color: #343a40; border: 1px solid #ddd; }
+    btnLogout.addEventListener('click', () => auth.signOut());
 
-/* --- DANH SÁCH LỚP --- */
-#class-list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
-.class-item { background-color: #fff; border: 1px solid #e0e0e0; border-left: 6px solid #007bff; border-radius: 12px; padding: 20px; transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; justify-content: space-between; }
-.class-item:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-.class-info { cursor: pointer; }
-.class-item h3 { margin: 0 0 10px 0; color: #0056b3; }
-.class-item p { margin: 5px 0 0 0; color: #555; font-size: 0.95em; }
-.class-item-actions { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: right; }
-.edit-btn { background-color: #ffc107; color: #212529; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; }
-.edit-btn:hover { background-color: #e0a800; }
-.delete-btn { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; margin-left: 10px; }
-.delete-btn:hover { background-color: #c82333; }
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            loginPage.style.display = 'none';
+            appContent.style.display = 'block';
+            userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
+            loadClassesFromFirestore().then(() => {
+                showPage('home-page');
+            });
+        } else {
+            currentUser = null;
+            loginPage.style.display = 'block';
+            appContent.style.display = 'none';
+        }
+    });
 
-/* --- FORM --- */
-.controls { display: flex; flex-direction: column; gap: 20px; }
-.control-group { display: flex; flex-direction: column; }
-label { font-weight: 500; margin-bottom: 8px; color: #343a40; }
-select, input[type="date"], input[type="text"], input[type="number"] { padding: 12px; border-radius: 8px; border: 1px solid #ced4da; font-size: 16px; width: 100%; box-sizing: border-box; }
-form button[type="submit"] { padding: 12px 20px; border: none; background-color: #28a745; color: white; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease; }
-form button[type="submit"]:hover { background-color: #218838; }
-.back-link { color: #007bff; text-decoration: none; font-weight: 500; }
-.back-link:hover { text-decoration: underline; }
-.error { color: red; text-align: center; margin-top: 15px; font-weight: 500; }
+    // --- TƯƠNG TÁC VỚI FIRESTORE ---
+    const getClassesRef = () => db.collection('users').doc(currentUser.uid).collection('classes');
 
-/* --- TRANG CHI TIẾT LỊCH --- */
-.lookup-wrapper { background-color: #eaf6ff; border: 1px solid #bce0fd; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
-#lookup-summary { margin-top: 15px; background-color: #fff; padding: 15px; border-radius: 8px; min-height: 50px; }
-#lookup-summary ul { padding-left: 20px; margin: 0; }
-#lookup-summary li { margin-bottom: 8px; }
-.table-title { text-align: center; color: #333; border-top: 1px solid #e9ecef; padding-top: 20px; margin-bottom: 20px; }
-.table-wrapper { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 12px 15px; border: 1px solid #e9ecef; text-align: left; white-space: nowrap; }
-th { background-color: #f8f9fa; font-weight: 700; position: sticky; top: 0; }
-tbody tr:nth-child(even) { background-color: #f8f9fa; }
-tbody tr:hover { background-color: #e9ecef; }
-tbody tr.highlight { background-color: #fff3cd; }
+    const loadClassesFromFirestore = async () => {
+        if (!currentUser) return;
+        try {
+            const snapshot = await getClassesRef().orderBy("name").get();
+            allClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) { console.error("Lỗi tải danh sách lớp:", error); }
+    };
 
-/* --- CỬA SỔ XÁC NHẬN XÓA (MODAL) --- */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.modal-actions { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
-.modal-actions button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
-.btn-danger { background-color: #dc3545; color: white; }
-.btn-secondary { background-color: #6c757d; color: white; }
+    // --- HIỂN THỊ DỮ LIỆU ---
+    const renderClassList = () => {
+        classListContainer.innerHTML = '';
+        if (allClasses.length === 0) {
+            classListContainer.innerHTML = '<p>Chưa có lớp nào được tạo. Hãy tạo lớp học đầu tiên của bạn!</p>';
+            return;
+        }
+        allClasses.forEach(cls => {
+            const classItem = document.createElement('div');
+            classItem.className = 'class-item';
+            classItem.innerHTML = `
+                <div class="class-info" data-id="${cls.id}">
+                    <h3>${cls.name}</h3>
+                    <p><strong>Số lượng:</strong> ${cls.numUnits} units</p>
+                    <p><strong>Loại lớp:</strong> ${cls.type}</p>
+                    <p><strong>Khai giảng:</strong> ${new Date(cls.startDate + 'T00:00:00').toLocaleDateString('vi-VN')}</p>
+                </div>
+                <div class="class-item-actions">
+                    <button class="edit-btn" data-id="${cls.id}">⚙️ Thiết lập</button>
+                    <button class="delete-btn" data-id="${cls.id}">🗑️ Xóa</button>
+                </div>
+            `;
+            classListContainer.appendChild(classItem);
+        });
+    };
+
+    const formatDate = (date) => !date ? '' : `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+    
+    function generateSchedule(startDateStr, classType, numUnits) {
+        const LESSONS = Array.from({ length: numUnits * 2 }, (_, i) => `Unit ${Math.floor(i / 2) + 1} lesson ${i % 2 + 1}`);
+        const scheduleDays = CLASS_SCHEDULE_DAYS[classType];
+        let currentDate = new Date(startDateStr + 'T00:00:00');
+        while (!scheduleDays.includes(currentDate.getDay())) currentDate.setDate(currentDate.getDate() + 1);
+        const allSessionDates = [];
+        while (allSessionDates.length < LESSONS.length + REVIEW_OFFSETS[REVIEW_OFFSETS.length - 1]) {
+            if (scheduleDays.includes(currentDate.getDay())) allSessionDates.push(new Date(currentDate.getTime()));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        const scheduleData = [];
+        for (let i = 0; i < LESSONS.length; i++) {
+            scheduleData.push({
+                session: i + 1, lessonName: LESSONS[i], lessonDate: formatDate(allSessionDates[i]),
+                review1: formatDate(allSessionDates[i + REVIEW_OFFSETS[0]]), review2: formatDate(allSessionDates[i + REVIEW_OFFSETS[1]]),
+                review3: formatDate(allSessionDates[i + REVIEW_OFFSETS[2]]), review4: formatDate(allSessionDates[i + REVIEW_OFFSETS[3]]),
+            });
+        }
+        return scheduleData;
+    }
+    
+    function displaySchedule(scheduleData) {
+        scheduleBody.innerHTML = '';
+        const todayString = formatDate(new Date());
+        scheduleData.forEach(item => {
+            const row = document.createElement('tr');
+            if(item.lessonDate === todayString) row.classList.add('highlight');
+            row.innerHTML = `<td>${item.session}</td><td>${item.lessonName}</td><td>${item.lessonDate}</td><td>${item.review1}</td><td>${item.review2}</td><td>${item.review3}</td><td>${item.review4}</td>`;
+            scheduleBody.appendChild(row);
+        });
+    }
+
+    function showSummaryForDate(dateStr) {
+        const lessonsForDay = []; const reviewsForDay = [];
+        for (const item of currentScheduleData) {
+            if (item.lessonDate === dateStr) lessonsForDay.push(item.lessonName);
+            if (item.review1 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 1)`);
+            if (item.review2 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 2)`);
+            if (item.review3 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 3)`);
+            if (item.review4 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 4)`);
+        }
+        let summaryHTML = '';
+        if (lessonsForDay.length === 0 && reviewsForDay.length === 0) {
+            summaryHTML = '<p>🎉 Không có lịch học hay ôn tập vào ngày này.</p>';
+        } else {
+            if (lessonsForDay.length > 0) summaryHTML += `<strong>📚 Bài học mới:</strong><ul>${lessonsForDay.map(l => `<li>${l}</li>`).join('')}</ul>`;
+            if (reviewsForDay.length > 0) summaryHTML += `<strong>📝 Nội dung ôn tập:</strong><ul>${reviewsForDay.map(r => `<li>${r}</li>`).join('')}</ul>`;
+        }
+        lookupSummary.innerHTML = summaryHTML;
+    }
+
+    // --- ĐIỀU HƯỚNG & SỰ KIỆN ---
+    const showPage = (pageId) => pages.forEach(p => p.style.display = p.id === pageId ? 'block' : 'none');
+    const showDeleteModal = () => deleteModal.style.display = 'flex';
+    const hideDeleteModal = () => deleteModal.style.display = 'none';
+
+    document.getElementById('btn-show-create-form').addEventListener('click', () => {
+        editingClassId = null;
+        formTitle.textContent = '➕ Tạo Lớp Học Mới';
+        formSubmitBtn.textContent = 'Tạo Lớp';
+        classForm.reset();
+        document.getElementById('num-units').value = 20;
+        document.getElementById('start-date').valueAsDate = new Date();
+        showPage('form-page');
+    });
+    
+    document.getElementById('btn-show-class-list').addEventListener('click', async () => {
+        await loadClassesFromFirestore();
+        renderClassList();
+        showPage('class-list-page');
+    });
+
+    document.querySelectorAll('.back-link').forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const targetPage = e.target.dataset.target;
+            if (targetPage === 'class-list-page') {
+                await loadClassesFromFirestore();
+                renderClassList();
+            }
+            showPage(targetPage);
+        });
+    });
+
+    classForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const classData = {
+            name: document.getElementById('class-name').value,
+            numUnits: document.getElementById('num-units').value,
+            type: document.getElementById('class-type').value,
+            startDate: document.getElementById('start-date').value,
+        };
+
+        if (!classData.name.trim() || !classData.startDate || !classData.numUnits) {
+            document.getElementById('form-error-message').textContent = 'Vui lòng điền đầy đủ thông tin!';
+            return;
+        }
+
+        try {
+            if (editingClassId) {
+                await getClassesRef().doc(editingClassId).update(classData);
+            } else {
+                await getClassesRef().add(classData);
+            }
+        } catch (error) { console.error("Lỗi lưu lớp:", error); }
+        
+        classForm.reset();
+        editingClassId = null;
+        await loadClassesFromFirestore();
+        renderClassList();
+        showPage('class-list-page');
+    });
+
+    classListContainer.addEventListener('click', (e) => {
+        const classInfo = e.target.closest('.class-info');
+        const editBtn = e.target.closest('.edit-btn');
+        const deleteBtn = e.target.closest('.delete-btn');
+
+        if (deleteBtn) {
+            deletingClassId = deleteBtn.dataset.id;
+            showDeleteModal();
+        } else if (editBtn) {
+            const classId = editBtn.dataset.id;
+            const selectedClass = allClasses.find(cls => cls.id === classId);
+            if (selectedClass) {
+                editingClassId = classId;
+                document.getElementById('class-name').value = selectedClass.name;
+                document.getElementById('num-units').value = selectedClass.numUnits;
+                document.getElementById('class-type').value = selectedClass.type;
+                document.getElementById('start-date').value = selectedClass.startDate;
+                formTitle.textContent = '⚙️ Thiết Lập Thông Tin Lớp Học';
+                formSubmitBtn.textContent = 'Lưu Thay Đổi';
+                showPage('form-page');
+            }
+        } else if (classInfo) {
+            const classId = classInfo.dataset.id;
+            const selectedClass = allClasses.find(cls => cls.id === classId);
+            if (selectedClass) {
+                scheduleClassName.textContent = `🗓️ Lịch Học Chi Tiết - Lớp ${selectedClass.name}`;
+                currentScheduleData = generateSchedule(selectedClass.startDate, selectedClass.type, selectedClass.numUnits);
+                displaySchedule(currentScheduleData);
+                lookupDateInput.value = '';
+                lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
+                showPage('schedule-details-page');
+            }
+        }
+    });
+
+    lookupDateInput.addEventListener('change', () => {
+        if (!lookupDateInput.value) {
+            lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
+            return;
+        }
+        const selectedDate = new Date(lookupDateInput.value + 'T00:00:00');
+        showSummaryForDate(formatDate(selectedDate));
+    });
+
+    btnConfirmDelete.addEventListener('click', async () => {
+        try {
+            await getClassesRef().doc(deletingClassId).delete();
+        } catch (error) { console.error("Lỗi xóa lớp:", error); }
+        await loadClassesFromFirestore();
+        renderClassList();
+        hideDeleteModal();
+    });
+
+    btnCancelDelete.addEventListener('click', hideDeleteModal);
+});
