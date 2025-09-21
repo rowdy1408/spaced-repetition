@@ -4,13 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Quản Lý Lớp Học</title>
-
     <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
 
-    <div id="app">
+    <div id="login-page" class="page container">
+        <header>
+            <h1>🎓 Chào mừng đến với Hệ Thống Quản Lý Lớp Học</h1>
+            <p>Vui lòng đăng nhập để tiếp tục</p>
+        </header>
+        <main class="login-container">
+            <button id="btn-google-login">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+                <span>Đăng nhập với Google</span>
+            </button>
+        </main>
+    </div>
+
+    <div id="app-content" style="display:none;">
+        
+        <div id="user-bar" class="container">
+            <div id="user-info"></div>
+            <button id="btn-logout" class="btn-secondary">Đăng xuất</button>
+        </div>
 
         <div id="home-page" class="page container">
             <header>
@@ -64,8 +80,7 @@
                 <h1>📚 Các Lớp Hiện Có</h1>
                 <a href="#" class="back-link" data-target="home-page">&larr; Quay lại trang chủ</a>
             </header>
-            <main id="class-list-container">
-                </main>
+            <main id="class-list-container"></main>
         </div>
         
         <div id="schedule-details-page" class="page container result-container" style="display:none;">
@@ -92,19 +107,23 @@
                 </div>
             </main>
         </div>
+    </div>
 
-        <div id="delete-confirm-modal" class="modal-overlay" style="display:none;">
-            <div class="modal-content">
-                <h3>Xác nhận xóa</h3>
-                <p>Bạn có chắc chắn muốn xóa lớp học này không? Hành động này không thể hoàn tác.</p>
-                <div class="modal-actions">
-                    <button id="btn-confirm-delete" class="btn-danger">Có, xóa lớp</button>
-                    <button id="btn-cancel-delete" class="btn-secondary">Không, giữ lại</button>
-                </div>
+    <div id="delete-confirm-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Xác nhận xóa</h3>
+            <p>Bạn có chắc chắn muốn xóa lớp học này không? Hành động này không thể hoàn tác.</p>
+            <div class="modal-actions">
+                <button id="btn-confirm-delete" class="btn-danger">Có, xóa lớp</button>
+                <button id="btn-cancel-delete" class="btn-secondary">Không, giữ lại</button>
             </div>
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
