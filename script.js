@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- BƯỚC QUAN TRỌNG: DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY ---
     const firebaseConfig = {
-    apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
-    authDomain: "quanlylophoc-5b945.firebaseapp.com",
-    projectId: "quanlylophoc-5b945",
-    storageBucket: "quanlylophoc-5b945.firebasestorage.app",
-    messagingSenderId: "38123679904",
-    appId: "1:38123679904:web:abe3710093b5a09643d9c5"
-  };
+        apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
+        authDomain: "quanlylophoc-5b945.firebaseapp.com",
+        projectId: "quanlylophoc-5b945",
+        storageBucket: "quanlylophoc-5b945.firebasestorage.app",
+        messagingSenderId: "38123679904",
+        appId: "1:38123679904:web:abe3710093b5a09643d9c5"
+    };
 
     // --- KHỞI TẠO FIREBASE ---
     firebase.initializeApp(firebaseConfig);
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContent = document.getElementById('app-content');
     const userInfo = document.getElementById('user-info');
     const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnGoogleRedirect = document.getElementById('btn-google-redirect'); // Thêm nút redirect
     const btnLogout = document.getElementById('btn-logout');
     const pages = document.querySelectorAll('#app-content .page');
     const classForm = document.getElementById('class-form');
@@ -46,10 +47,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- XỬ LÝ ĐĂNG NHẬP / ĐĂNG XUẤT ---
     btnGoogleLogin.addEventListener('click', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(error => console.error("Lỗi đăng nhập Google:", error));
+        auth.signInWithPopup(provider).catch(error => console.error("Lỗi đăng nhập Google (Popup):", error));
     });
 
+    // Thêm xử lý đăng nhập bằng Redirect
+    if (btnGoogleRedirect) {
+        btnGoogleRedirect.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithRedirect(provider).catch(error => console.error("Lỗi đăng nhập Google (Redirect):", error));
+        });
+    }
+
     btnLogout.addEventListener('click', () => auth.signOut());
+
+    // Xử lý kết quả trả về từ Redirect
+    auth.getRedirectResult().then((result) => {
+        if (result.credential) {
+            // Đăng nhập thành công từ Redirect, không cần làm gì thêm vì onAuthStateChanged sẽ tự động xử lý.
+            console.log("Đăng nhập bằng Redirect thành công!");
+        }
+    }).catch((error) => {
+        console.error("Lỗi đăng nhập từ Redirect:", error);
+        // Hiển thị lỗi ra màn hình nếu cần
+        alert("Lỗi đăng nhập: " + error.message);
+    });
 
     auth.onAuthStateChanged(user => {
         if (user) {
