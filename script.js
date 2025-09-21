@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- BƯỚC QUAN TRỌNG: DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY ---
     const firebaseConfig = {
-    apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
-    authDomain: "quanlylophoc-5b945.firebaseapp.com",
-    projectId: "quanlylophoc-5b945",
-    storageBucket: "quanlylophoc-5b945.firebasestorage.app",
-    messagingSenderId: "38123679904",
-    appId: "1:38123679904:web:abe3710093b5a09643d9c5"
-  };
+        apiKey: "AIzaSy...", // << THAY BẰNG KEY CỦA BẠN
+        authDomain: "quanlylophoc-5b945.firebaseapp.com", // << THAY BẰNG DOMAIN CỦA BẠN
+        projectId: "quanlylophoc-5b945", // << THAY BẰNG ID DỰ ÁN CỦA BẠN
+        storageBucket: "quanlylophoc-5b945.appspot.com", // << THAY BẰNG BUCKET CỦA BẠN
+        messagingSenderId: "...", // << THAY BẰNG ID CỦA BẠN
+        appId: "..." // << THAY BẰNG APP ID CỦA BẠN
+    };
 
     // --- KHỞI TẠO FIREBASE ---
     firebase.initializeApp(firebaseConfig);
@@ -172,5 +172,105 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage('form-page');
     });
     
-    document.getElementById('btn-show-class
+    document.getElementById('btn-show-class-list').addEventListener('click', async () => {
+        await loadClassesFromFirestore();
+        renderClassList();
+        showPage('class-list-page');
+    });
 
+    document.querySelectorAll('.back-link').forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const targetPage = e.target.dataset.target;
+            if (targetPage === 'class-list-page') {
+                await loadClassesFromFirestore();
+                renderClassList();
+            }
+            showPage(targetPage);
+        });
+    });
+
+    classForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const classData = {
+            name: document.getElementById('class-name').value,
+            numUnits: document.getElementById('num-units').value,
+            type: document.getElementById('class-type').value,
+            startDate: document.getElementById('start-date').value,
+        };
+
+        if (!classData.name.trim() || !classData.startDate || !classData.numUnits) {
+            document.getElementById('form-error-message').textContent = 'Vui lòng điền đầy đủ thông tin!';
+            return;
+        }
+
+        try {
+            if (editingClassId) {
+                await getClassesRef().doc(editingClassId).update(classData);
+            } else {
+                await getClassesRef().add(classData);
+            }
+        } catch (error) { console.error("Lỗi lưu lớp:", error); }
+        
+        classForm.reset();
+        editingClassId = null;
+        await loadClassesFromFirestore();
+        renderClassList();
+        showPage('class-list-page');
+    });
+
+    classListContainer.addEventListener('click', (e) => {
+        const classInfo = e.target.closest('.class-info');
+        const editBtn = e.target.closest('.edit-btn');
+        const deleteBtn = e.target.closest('.delete-btn');
+
+        if (deleteBtn) {
+            deletingClassId = deleteBtn.dataset.id;
+            showDeleteModal();
+        } else if (editBtn) {
+            const classId = editBtn.dataset.id;
+            const selectedClass = allClasses.find(cls => cls.id === classId);
+            if (selectedClass) {
+                editingClassId = classId;
+                document.getElementById('class-name').value = selectedClass.name;
+                document.getElementById('num-units').value = selectedClass.numUnits;
+                document.getElementById('class-type').value = selectedClass.type;
+                document.getElementById('start-date').value = selectedClass.startDate;
+                formTitle.textContent = '⚙️ Thiết Lập Thông Tin Lớp Học';
+                formSubmitBtn.textContent = 'Lưu Thay Đổi';
+                showPage('form-page');
+            }
+        } else if (classInfo) {
+            const classId = classInfo.dataset.id;
+            const selectedClass = allClasses.find(cls => cls.id === classId);
+            if (selectedClass) {
+                scheduleClassName.textContent = `🗓️ Lịch Học Chi Tiết - Lớp ${selectedClass.name}`;
+                currentScheduleData = generateSchedule(selectedClass.startDate, selectedClass.type, selectedClass.numUnits);
+                displaySchedule(currentScheduleData);
+                lookupDateInput.value = '';
+                lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
+                showPage('schedule-details-page');
+            }
+        }
+    });
+
+    lookupDateInput.addEventListener('change', () => {
+        if (!lookupDateInput.value) {
+            lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
+            return;
+        }
+        const selectedDate = new Date(lookupDateInput.value + 'T00:00:00');
+        showSummaryForDate(formatDate(selectedDate));
+    });
+
+    btnConfirmDelete.addEventListener('click', async () => {
+        try {
+            await getClassesRef().doc(deletingClassId).delete();
+        } catch (error) { console.error("Lỗi xóa lớp:", error); }
+        await loadClassesFromFirestore();
+        renderClassList();
+        hideDeleteModal();
+    });
+
+    btnCancelDelete.addEventListener('click', hideDeleteModal);
+});
