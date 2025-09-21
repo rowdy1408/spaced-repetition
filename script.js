@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- BƯỚC QUAN TRỌNG: DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY ---
     const firebaseConfig = {
-        apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
+    apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
     authDomain: "quanlylophoc-5b945.firebaseapp.com",
     projectId: "quanlylophoc-5b945",
     storageBucket: "quanlylophoc-5b945.firebasestorage.app",
     messagingSenderId: "38123679904",
-    appId: "1:38123679904:web:f5db197b9315144643d9c5"
-    };
+    appId: "1:38123679904:web:abe3710093b5a09643d9c5"
+  };
 
     // --- KHỞI TẠO FIREBASE ---
     firebase.initializeApp(firebaseConfig);
@@ -173,3 +173,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('btn-show-class
+
