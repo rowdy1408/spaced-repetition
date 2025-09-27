@@ -30,11 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const scheduleBody = document.getElementById('schedule-body');
     const lookupDateInput = document.getElementById('lookup-date');
     const lookupSummary = document.getElementById('lookup-summary');
+    const todaySummary = document.getElementById('today-summary');
     const deleteModal = document.getElementById('delete-confirm-modal');
     const btnConfirmDelete = document.getElementById('btn-confirm-delete');
     const btnCancelDelete = document.getElementById('btn-cancel-delete');
     
-    // **Thêm các biến cho form để kiểm tra ngày**
     const classTypeInput = document.getElementById('class-type');
     const startDateInput = document.getElementById('start-date');
     const formErrorMessage = document.getElementById('form-error-message');
@@ -203,6 +203,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const displayTodaySummary = (scheduleData) => {
+        const todayString = formatDate(new Date());
+        const lessonsForToday = [];
+        const reviewsForToday = [];
+
+        for (const item of scheduleData) {
+            if (item.lessonDate === todayString) lessonsForToday.push(item.lessonName);
+            if (item.review1 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 1)`);
+            if (item.review2 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 2)`);
+            if (item.review3 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 3)`);
+            if (item.review4 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 4)`);
+            if (item.review5 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 5)`);
+        }
+
+        let summaryHTML = '<h2>🗓️ Lịch Hôm Nay</h2>';
+        if (lessonsForToday.length === 0 && reviewsForToday.length === 0) {
+            summaryHTML += '<p class="no-class-message">Hôm nay lớp mình chưa tới ngày học nè 🎉</p>';
+        } else {
+            if (lessonsForToday.length > 0) {
+                summaryHTML += `<strong>📚 Bài học mới:</strong><ul>${lessonsForToday.map(l => `<li>${l}</li>`).join('')}</ul>`;
+            }
+            if (reviewsForToday.length > 0) {
+                summaryHTML += `<strong>📝 Nội dung ôn tập:</strong><ul>${reviewsForToday.map(r => `<li>${r}</li>`).join('')}</ul>`;
+            }
+        }
+        todaySummary.innerHTML = summaryHTML;
+    };
+
     function showSummaryForDate(dateStr) {
         const lessonsForDay = []; const reviewsForDay = [];
         for (const item of currentScheduleData) {
@@ -224,28 +252,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- ĐIỀU HƯỚNG & SỰ KIỆN ---
-
-    // **HÀM MỚI: Kiểm tra ngày khai giảng có hợp lệ không**
     const validateStartDate = () => {
         const selectedDaysKey = classTypeInput.value;
         const startDateValue = startDateInput.value;
 
-        // Nếu chưa chọn ngày thì không báo lỗi
         if (!startDateValue) {
             formErrorMessage.textContent = '';
             return;
         }
 
         const allowedDays = CLASS_SCHEDULE_DAYS[selectedDaysKey];
-        // Thêm 'T00:00:00' để tránh lỗi múi giờ
         const selectedDate = new Date(startDateValue + 'T00:00:00');
-        const selectedDay = selectedDate.getDay(); // 0 = Chủ Nhật, 1 = Thứ 2,...
+        const selectedDay = selectedDate.getDay();
 
-        // Nếu ngày được chọn không nằm trong danh sách ngày hợp lệ
         if (!allowedDays.includes(selectedDay)) {
             formErrorMessage.textContent = 'Ngày khai giảng không khớp với mô hình lớp học.';
         } else {
-            formErrorMessage.textContent = ''; // Xóa thông báo lỗi nếu ngày hợp lệ
+            formErrorMessage.textContent = '';
         }
     };
 
@@ -261,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('num-units').value = 20;
         document.getElementById('lessons-per-unit').value = 2;
         document.getElementById('start-date').valueAsDate = new Date();
-        formErrorMessage.textContent = ''; // Xóa thông báo lỗi cũ khi mở form
+        formErrorMessage.textContent = '';
         showPage('form-page');
     });
     
@@ -286,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
     classForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Chặn submit nếu vẫn còn báo lỗi ngày tháng
         if (formErrorMessage.textContent) {
             return; 
         }
@@ -341,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('lessons-per-unit').value = selectedClass.lessonsPerUnit || 2;
                 formTitle.textContent = '⚙️ Thiết Lập Thông Tin Lớp Học';
                 formSubmitBtn.textContent = 'Lưu Thay Đổi';
-                formErrorMessage.textContent = ''; // Xóa lỗi cũ khi edit
+                formErrorMessage.textContent = '';
                 showPage('form-page');
             }
         } else if (classInfo) {
@@ -357,6 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedClass.lessonsPerUnit
                 );
                 displaySchedule(currentScheduleData, selectedClass.courseType || 'starters-movers-flyers');
+                
+                displayTodaySummary(currentScheduleData);
+                
                 lookupDateInput.value = '';
                 lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
                 showPage('schedule-details-page');
@@ -384,7 +409,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnCancelDelete.addEventListener('click', hideDeleteModal);
 
-    // **SỰ KIỆN MỚI: Kích hoạt hàm kiểm tra khi người dùng thay đổi lựa chọn**
     classTypeInput.addEventListener('change', validateStartDate);
     startDateInput.addEventListener('change', validateStartDate);
 });
