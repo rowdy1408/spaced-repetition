@@ -47,12 +47,23 @@
             <main>
                 <form id="class-form" class="controls">
                     <div class="control-group">
-                        <label for="class-name">Tên lớp (ví dụ: Movers K15)</label>
+                        <label for="class-name">Tên lớp (tự ghi)</label>
                         <input type="text" id="class-name" required>
                     </div>
                     <div class="control-group">
-                        <label for="num-units">Số lượng Unit (ví dụ: 20)</label>
+                        <label for="course-type">Chọn loại lớp:</label>
+                        <select id="course-type">
+                            <option value="starters-movers-flyers">Starters-Movers-Flyers</option>
+                            <option value="ket-pet">KET-PET</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="num-units">Số lượng Unit</label>
                         <input type="number" id="num-units" required min="1" value="20">
+                    </div>
+                     <div class="control-group">
+                        <label for="lessons-per-unit">Số lượng lesson mỗi Unit</label>
+                        <input type="number" id="lessons-per-unit" required min="1" value="2">
                     </div>
                     <div class="control-group">
                         <label for="class-type">Chọn mô hình lớp học:</label>
@@ -97,11 +108,8 @@
                 <h2 class="table-title">Bảng Lịch Chi Tiết</h2>
                 <div class="table-wrapper">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Buổi</th><th>Bài học</th><th>Ngày học</th><th>Ôn lần 1</th><th>Ôn lần 2</th><th>Ôn lần 3</th><th>Ôn lần 4</th>
-                            </tr>
-                        </thead>
+                        <thead id="schedule-header">
+                            </thead>
                         <tbody id="schedule-body"></tbody>
                     </table>
                 </div>
@@ -120,6 +128,10 @@
             </div>
         </div>
     </div>
+    
+    <div class="footer-text">
+        This website is created by Vũ Trần Lập Nhân, DO NOT REUSE WITHOUT ASKING FOR COPYRIGHT.
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -128,4 +140,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
