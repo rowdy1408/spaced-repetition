@@ -15,7 +15,7 @@ body {
     align-items: center;
     justify-content: flex-start;
     min-height: 100vh;
-    padding: 40px 20px;
+    padding: 40px 20px 80px; /* Increased bottom padding */
     box-sizing: border-box;
 }
 
@@ -112,3 +112,17 @@ tbody tr.highlight { background-color: #fff3cd; }
 .modal-actions button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
 .btn-danger { background-color: #dc3545; color: white; }
 .btn-secondary { background-color: #6c757d; color: white; }
+
+/* --- FOOTER --- */
+.footer-text {
+    text-align: center;
+    padding: 15px;
+    margin-top: auto; /* Pushes footer to the bottom of the flex container */
+    color: #3a3a3a;
+    background-color: rgba(255, 255, 255, 0.9);
+    width: 100%;
+    max-width: 800px; /* Match the main container width */
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-weight: 500;
+}
