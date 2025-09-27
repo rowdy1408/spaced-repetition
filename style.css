@@ -117,12 +117,54 @@ tbody tr.highlight { background-color: #fff3cd; }
 .footer-text {
     text-align: center;
     padding: 15px;
-    margin-top: auto; /* Pushes footer to the bottom of the flex container */
+    margin-top: auto;
     color: #3a3a3a;
     background-color: rgba(255, 255, 255, 0.9);
     width: 100%;
-    max-width: 800px; /* Match the main container width */
+    max-width: 800px;
     border-radius: 12px;
     box-sizing: border-box;
     font-weight: 500;
+}
+
+/* --- KHUNG LỊCH HÔM NAY --- */
+#today-summary {
+    background-color: #eaf6ff;
+    border-left: 6px solid #007bff;
+    border-radius: 12px;
+    padding: 20px 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+#today-summary h2 {
+    margin-top: 0;
+    color: #0056b3;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+#today-summary ul {
+    padding-left: 20px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+#today-summary li {
+    margin-bottom: 8px;
+    font-size: 1.05em;
+}
+
+#today-summary strong {
+    font-size: 1.1em;
+    color: #343a40;
+}
+
+#today-summary .no-class-message {
+    text-align: center;
+    font-weight: 500;
+    font-size: 1.1em;
+    color: #555;
+    padding: 10px 0;
 }
