@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Quản Lý Lớp Học</title>
+    <link rel="icon" type="image/png" href="images/my-logo.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -81,10 +82,13 @@
                         <input type="date" id="start-date" required>
                     </div>
                     <div class="control-group">
-                        <label for="mini-test-dates">Ngày Mini Test </label>
-                        <input type="text" id="mini-test-dates" placeholder="VD: 25/11/2025, 30/12/2025">
+                        <label for="schedule-file">
+                            Hoặc Tải Lên Lịch Học (file .csv)
+                            <span id="show-csv-guide" title="Xem hướng dẫn tạo file .csv">❓</span>
+                        </label>
+                        <input type="file" id="schedule-file" accept=".csv">
+                        <small id="file-feedback"></small> 
                     </div>
-                    
                     <button type="submit" id="form-submit-btn">Tạo Lớp</button>
                 </form>
                 <div id="form-error-message" class="error"></div>
@@ -133,6 +137,34 @@
             <div class="modal-actions">
                 <button id="btn-confirm-delete" class="btn-danger">Có, xóa lớp</button>
                 <button id="btn-cancel-delete" class="btn-secondary">Không, giữ lại</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="csv-guide-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content modal-content-large">
+            <h3>Hướng dẫn xuất file .csv</h3>
+            <p>Để tải lịch học lên, file của bạn phải có định dạng <strong>.csv</strong> và chứa các cột theo yêu cầu.</p>
+            
+            <div class="guide-section">
+                <h4>⚠️ Yêu cầu định dạng file</h4>
+                <p>File của bạn bắt buộc phải có dòng tiêu đề chứa cột <strong>"Bài học"</strong> và cột <strong>"Ngày học"</strong>. Định dạng ngày phải là <code>DD/MM/YYYY</code>.</p>
+                <img src="https://i.pinimg.com/736x/63/a8/04/63a80429da3e7d92308a003b770fcfce.jpg" alt="Định dạng file CSV mẫu có ngày học" style="width:100%; border:1px solid #ddd; border-radius: 8px;">
+                <p style="margin-top:10px;"><em>Lưu ý: Không dùng Google Docs. Chỉ dùng Google Sheets hoặc Excel.</em></p>
+            </div>
+
+            <div class="guide-section">
+                <h4>📄 Hướng dẫn cho Google Sheets & Excel</h4>
+                <ol>
+                    <li>Chuẩn bị file với các cột chứa tiêu đề <strong>"Bài học"</strong> và <strong>"Ngày học"</strong>.</li>
+                    <li>Vào menu <strong>File / Tệp</strong> → <strong>Download / Tải xuống</strong> (hoặc <strong>Save As / Lưu dưới tên khác</strong>).</li>
+                    <li>Chọn định dạng <strong>CSV UTF-8 (Comma delimited) (*.csv)</strong>.</li>
+                    <li>Nhấn <strong>Save / Lưu</strong>.</li>
+                </ol>
+            </div>
+
+            <div class="modal-actions">
+                <button id="btn-close-guide" class="btn-secondary">Đã hiểu</button>
             </div>
         </div>
     </div>
