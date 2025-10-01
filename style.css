@@ -21,7 +21,6 @@ body {
 
 /* --- ĐỊNH DẠNG KHUNG CHỨA --- */
 .container {
-    width: 100%;
     background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(5px);
     padding: 30px 40px;
@@ -30,6 +29,9 @@ body {
     box-sizing: border-box;
     transition: all 0.3s ease-in-out;
     margin-bottom: 20px;
+}
+#app-content {
+    width: 100%;
 }
 #login-page, #home-page, #form-page, #class-list-page, #user-bar {
     max-width: 800px;
@@ -293,4 +295,48 @@ tbody tr.final-test-day:hover td {
     margin-top: 0;
     padding-top: 0;
     border-top: none;
+}
+/* --- CSS CHO THIẾT BỊ DI ĐỘNG (RESPONSIVE) --- */
+
+@media (max-width: 768px) {
+    body {
+        /* Giảm padding của trang trên điện thoại */
+        padding: 20px 10px 80px;
+    }
+
+    .container {
+        /* Giảm padding của các khung chính */
+        padding: 20px 15px;
+    }
+
+    header h1 {
+        /* Giảm kích thước tiêu đề chính */
+        font-size: 1.6em;
+    }
+    
+    header p {
+        font-size: 1em;
+    }
+
+    .home-buttons button {
+        /* Giảm padding và cỡ chữ cho các nút trang chủ */
+        padding: 15px;
+        font-size: 1.1em;
+    }
+
+    /* Danh sách lớp học: tự động chuyển thành 1 cột */
+    #class-list-container {
+        grid-template-columns: 1fr; /* Chỉ hiển thị 1 lớp mỗi hàng */
+    }
+
+    /* Giảm kích thước cho cửa sổ hướng dẫn trên điện thoại */
+    .modal-content-large {
+        max-width: 90vw; /* Chiếm 90% chiều rộng màn hình */
+        max-height: 80vh; /* Chiếm 80% chiều cao màn hình */
+    }
+
+    /* Hướng dẫn CSV: chuyển về 1 cột trên điện thoại */
+    .guide-container {
+        flex-direction: column;
+    }
 }
