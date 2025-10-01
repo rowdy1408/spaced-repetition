@@ -249,3 +249,48 @@ tbody tr.final-test-day:hover td {
 .guide-section ol {
     padding-left: 20px;
 }
+/* --- ĐỊNH DẠNG NÚT UPLOAD FILE MỚI --- */
+.file-upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.btn-upload {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #5a6268;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+.btn-upload:hover {
+    background-color: #494f54;
+}
+.file-input-hidden {
+    display: none;
+}
+#file-feedback {
+    display: block;
+    margin-top: 8px;
+    font-style: italic;
+    color: #555;
+}
+
+/* --- ĐỊNH DẠNG BỐ CỤC 2 CỘT CHO HƯỚNG DẪN --- */
+.guide-container {
+    display: flex;
+    gap: 25px; /* Khoảng cách giữa 2 cột */
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+.guide-column {
+    flex: 1; /* Chia đều không gian cho 2 cột */
+}
+.guide-section { /* Xóa bỏ các định dạng cũ của guide-section */
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
