@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function generateSchedule(classData) {
-        const { startDate, type, numUnits, courseType, lessonsPerUnit, customLessonNames = {}, uploadedLessons = [] } = classData;
+        const { startDate, type, numUnits, courseType, lessonsPerUnit, miniTestDates = [], customLessonNames = {}, uploadedLessons = [] } = classData;
         const scheduleDays = CLASS_SCHEDULE_DAYS[type];
         const offsets = courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF;
         let scheduleData = [];
@@ -163,20 +163,33 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const totalLessons = parseInt(numUnits, 10) * parseInt(lessonsPerUnit, 10);
             let currentDate = new Date(startDate + 'T00:00:00');
-            for (let i = 0; i < totalLessons; i++) {
+            let lessonCounter = 0;
+            let sessionCounter = 0;
+            while(lessonCounter < totalLessons) {
+                // Giới hạn số buổi để tránh vòng lặp vô tận nếu nhập quá nhiều test
+                if (sessionCounter > totalLessons * 2 && totalLessons > 0) break; 
+                
                 const sessionDate = findNextWorkDay(currentDate, scheduleDays);
-                const unitNumber = Math.floor(i / lessonsPerUnit) + 1;
-                const lessonNumber = (i % lessonsPerUnit) + 1;
-                const lessonKey = `${unitNumber}-${lessonNumber}`;
-                const lessonName = `Unit ${unitNumber} lesson ${lessonNumber}`;
-                scheduleData.push({
-                    isLesson: true,
-                    lessonName: customLessonNames[lessonKey] || lessonName,
-                    lessonKey: lessonKey,
-                    lessonDate: formatDate(sessionDate),
-                });
+                const formattedDate = formatDate(sessionDate);
+
+                if (miniTestDates.includes(formattedDate)) {
+                    scheduleData.push({ isMiniTest: true, lessonName: 'Mini Test', lessonDate: formattedDate });
+                } else {
+                    const unitNumber = Math.floor(lessonCounter / lessonsPerUnit) + 1;
+                    const lessonNumber = (lessonCounter % lessonsPerUnit) + 1;
+                    const lessonKey = `${unitNumber}-${lessonNumber}`;
+                    const lessonName = `Unit ${unitNumber} lesson ${lessonNumber}`;
+                    scheduleData.push({
+                        isLesson: true,
+                        lessonName: customLessonNames[lessonKey] || lessonName,
+                        lessonKey: lessonKey,
+                        lessonDate: formattedDate,
+                    });
+                    lessonCounter++;
+                }
                 currentDate = new Date(sessionDate.getTime());
                 currentDate.setDate(currentDate.getDate() + 1);
+                sessionCounter++;
             }
         }
         
@@ -369,10 +382,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formErrorMessage.textContent = '';
         fileFeedback.textContent = '';
         uploadedLessons = [];
-        startDateInput.disabled = false;
-        classTypeInput.disabled = false;
-        document.getElementById('num-units').disabled = false;
-        document.getElementById('lessons-per-unit').disabled = false;
+        const manualInputs = [startDateInput, classTypeInput, document.getElementById('num-units'), document.getElementById('lessons-per-unit'), document.getElementById('mini-test-dates')];
+        manualInputs.forEach(input => input.disabled = false);
         showPage('form-page');
     });
 
@@ -401,6 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const isFileUploaded = uploadedLessons.length > 0;
+        const miniTestDatesRaw = document.getElementById('mini-test-dates').value;
+
         let classData = {
             name: document.getElementById('class-name').value,
             courseType: document.getElementById('course-type').value,
@@ -409,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             numUnits: isFileUploaded ? 0 : document.getElementById('num-units').value,
             lessonsPerUnit: isFileUploaded ? 0 : document.getElementById('lessons-per-unit').value,
             startDate: isFileUploaded ? '' : document.getElementById('start-date').value,
+            miniTestDates: isFileUploaded ? [] : (miniTestDatesRaw ? miniTestDatesRaw.split(',').map(d => d.trim()).filter(d => d) : []),
         };
 
         try {
@@ -451,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const isFileUploaded = selectedClass.uploadedLessons?.length > 0;
                 
-                const manualInputs = [document.getElementById('num-units'), document.getElementById('lessons-per-unit'), startDateInput];
+                const manualInputs = [document.getElementById('num-units'), document.getElementById('lessons-per-unit'), startDateInput, document.getElementById('mini-test-dates')];
                 
                 if(isFileUploaded){
                     fileFeedback.textContent = `Lớp này đang dùng ${selectedClass.uploadedLessons.length} bài học từ file. Chọn file mới để thay thế.`;
@@ -461,6 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('num-units').value = selectedClass.numUnits;
                     document.getElementById('lessons-per-unit').value = selectedClass.lessonsPerUnit;
                     document.getElementById('start-date').value = selectedClass.startDate;
+                    document.getElementById('mini-test-dates').value = selectedClass.miniTestDates ? selectedClass.miniTestDates.join(', ') : '';
                     manualInputs.forEach(input => input.disabled = false);
                 }
                 
@@ -583,13 +598,12 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleFileInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         formErrorMessage.innerHTML = '';
-        fileFeedback.textContent = '';
+        fileFeedback.textContent = 'Chưa có file nào được chọn.';
         uploadedLessons = []; 
-        const manualInputs = [startDateInput, document.getElementById('num-units'), document.getElementById('lessons-per-unit')];
+        const manualInputs = [startDateInput, document.getElementById('num-units'), document.getElementById('lessons-per-unit'), document.getElementById('mini-test-dates')];
 
         if (!file) {
             manualInputs.forEach(input => input.disabled = false);
-            classTypeInput.disabled = false;
             return;
         }
 
@@ -630,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parsedLessons.length === 0) throw new Error('Không tìm thấy dữ liệu hợp lệ.');
                 
                 uploadedLessons = parsedLessons;
-                fileFeedback.textContent = `✅ Đã tải lên ${uploadedLessons.length} buổi học. Lịch sẽ được tạo theo file.`;
+                fileFeedback.textContent = `✅ Đã chọn file: ${file.name} (${uploadedLessons.length} buổi học).`;
                 fileFeedback.style.color = 'green';
                 manualInputs.forEach(input => input.disabled = true);
                 
@@ -651,7 +665,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (error) {
                 formErrorMessage.textContent = `❌ ${error.message}`; 
-                fileFeedback.textContent = ''; 
+                fileFeedback.textContent = 'Chưa có file nào được chọn.';
+                fileFeedback.style.color = '#dc3545';
                 uploadedLessons = [];
                 manualInputs.forEach(input => input.disabled = false);
             }
