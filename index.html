@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Quản Lý Lớp Học</title>
-    <link rel="icon" type="image/png" href="images/my-logo.png">
+    <link rel="icon" type="image/png" href="https://i.pinimg.com/736x/c4/dd/3f/c4dd3f0696ccc6790f6ee84ff22ae636.jpg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -82,13 +82,20 @@
                         <input type="date" id="start-date" required>
                     </div>
                     <div class="control-group">
-                        <label for="schedule-file">
-                            Hoặc Tải Lên Lịch Học (file .csv)
-                            <span id="show-csv-guide" title="Xem hướng dẫn tạo file .csv">❓</span>
-                        </label>
-                        <input type="file" id="schedule-file" accept=".csv">
-                        <small id="file-feedback"></small> 
+                        <label for="mini-test-dates">Ngày Mini Test (nhập thủ công)</label>
+                        <input type="text" id="mini-test-dates" placeholder="VD: 25/11/2025, 30/12/2025">
                     </div>
+                    <div class="control-group">
+    <label for="schedule-file">
+        Hoặc Tải Lên Lịch Học (file .csv)
+    </label>
+    <div class="file-upload-wrapper">
+        <label for="schedule-file" class="btn-upload">📁 Chọn File</label>
+        <span id="show-csv-guide" title="Xem hướng dẫn tạo file .csv">❓</span>
+        <input type="file" id="schedule-file" accept=".csv" class="file-input-hidden">
+    </div>
+    <small id="file-feedback">Chưa có file nào được chọn.</small> 
+</div>
                     <button type="submit" id="form-submit-btn">Tạo Lớp</button>
                 </form>
                 <div id="form-error-message" class="error"></div>
