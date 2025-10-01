@@ -90,6 +90,7 @@ form button[type="submit"]:hover { background-color: #218838; }
 .back-link { color: #007bff; text-decoration: none; font-weight: 500; }
 .back-link:hover { text-decoration: underline; }
 .error { color: red; text-align: center; margin-top: 15px; font-weight: 500; }
+#file-feedback { color: green; margin-top: 5px; }
 
 /* --- TRANG CHI TIẾT LỊCH --- */
 .lookup-wrapper { background-color: #eaf6ff; border: 1px solid #bce0fd; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
@@ -110,10 +111,10 @@ tbody tr.highlight { background-color: #fff3cd; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px; /* Khoảng cách giữa chữ và nút */
+    gap: 10px;
 }
 .lesson-name-text {
-    flex-grow: 1; /* Phần chữ sẽ chiếm hết không gian trống */
+    flex-grow: 1;
     outline: none;
     padding: 2px 5px;
     border-radius: 4px;
@@ -121,7 +122,7 @@ tbody tr.highlight { background-color: #fff3cd; }
 }
 .lesson-name-text[contenteditable="true"] {
     background-color: #eaf6ff;
-    outline: 2px solid #007bff; /* Viền xanh khi sửa */
+    outline: 2px solid #007bff;
 }
 .lesson-actions button {
     background: none;
@@ -131,13 +132,13 @@ tbody tr.highlight { background-color: #fff3cd; }
     padding: 4px;
     line-height: 1;
 }
-.lesson-actions .confirm-lesson-btn { color: #28a745; /* Màu xanh lá */ }
-.lesson-actions .cancel-lesson-btn { color: #dc3545; /* Màu đỏ */ }
+.lesson-actions .confirm-lesson-btn { color: #28a745; }
+.lesson-actions .cancel-lesson-btn { color: #dc3545; }
 .hidden { display: none; }
 
 /* --- ĐỊNH DẠNG NGÀY TEST TRÊN LỊCH --- */
 tbody tr.mini-test-day td {
-    background-color: #fff3cd; /* Màu vàng nhạt */
+    background-color: #fff3cd;
     font-weight: 700;
     color: #856404;
     text-align: center;
@@ -146,7 +147,7 @@ tbody tr.mini-test-day:hover td {
     background-color: #ffeeba;
 }
 tbody tr.final-test-day td {
-    background-color: #f8d7da; /* Màu đỏ nhạt */
+    background-color: #f8d7da;
     font-weight: 700;
     color: #721c24;
     text-align: center;
@@ -212,4 +213,39 @@ tbody tr.final-test-day:hover td {
     font-size: 1.1em;
     color: #555;
     padding: 10px 0;
+}
+
+/* --- ĐỊNH DẠNG NÚT VÀ CỬA SỔ HƯỚNG DẪN --- */
+#show-csv-guide {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 5px;
+    font-size: 14px;
+}
+.modal-content-large {
+    max-width: 600px;
+    text-align: left;
+     max-height: 85vh; /* Giới hạn chiều cao tối đa bằng 85% chiều cao màn hình */
+    overflow-y: auto; /* Tự động thêm thanh cuộn dọc khi nội dung dài hơn */
+}
+
+.guide-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+.guide-section h4 {
+    margin-top: 0;
+    color: #0056b3;
+}
+.guide-section ol {
+    padding-left: 20px;
 }
