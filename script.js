@@ -56,8 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedLessons = [];
     let tempPostponedDates = [];
     let activeLessonCell = null;
-    let lastScheduleState = null;
-    let lastPostponedDate = null;
+    let scheduleHistory = []; // Thay thế lastScheduleState bằng một mảng lịch sử
 
     // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
@@ -508,6 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const classId = classInfo.dataset.id;
             currentClassId = classId;
             tempPostponedDates = [];
+            scheduleHistory = [];
             btnUndo.classList.add('hidden');
             const selectedClass = allClasses.find(cls => cls.id === classId);
             if (selectedClass) {
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pencilMenuModal.style.display = 'none';
         if (!activeLessonCell) return;
         
-        lastScheduleState = JSON.parse(JSON.stringify(currentScheduleData));
+        scheduleHistory.push(JSON.parse(JSON.stringify(currentScheduleData)));
 
         const row = activeLessonCell.parentElement;
         const lessonDateStr = row.cells[2]?.textContent || 
@@ -608,7 +608,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (lessonDateStr && !tempPostponedDates.includes(lessonDateStr)) {
             tempPostponedDates.push(lessonDateStr);
-            lastPostponedDate = lessonDateStr;
         }
 
         const selectedClass = allClasses.find(cls => cls.id === currentClassId);
@@ -621,19 +620,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     btnUndo.addEventListener('click', () => {
-        if (lastScheduleState) {
-            currentScheduleData = lastScheduleState;
-            if (lastPostponedDate) {
-                tempPostponedDates = tempPostponedDates.filter(d => d !== lastPostponedDate);
-            }
+        if (scheduleHistory.length > 0) {
+            currentScheduleData = scheduleHistory.pop();
+            tempPostponedDates.pop();
             
             const selectedClass = allClasses.find(cls => cls.id === currentClassId);
             displaySchedule(currentScheduleData, selectedClass.courseType);
             displayTodaySummary(currentScheduleData);
             
-            lastScheduleState = null;
-            lastPostponedDate = null;
-            btnUndo.classList.add('hidden');
+            if (scheduleHistory.length === 0) {
+                btnUndo.classList.add('hidden');
+            }
         }
     });
 
