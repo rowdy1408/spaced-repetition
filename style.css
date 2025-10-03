@@ -5,16 +5,11 @@ body {
     font-family: 'Be Vietnam Pro', sans-serif;
     color: #3a3a3a;
     margin: 0;
-    background-image: url("images\z6427037259685_8a40e6594c276e06c4a6cbeb8c07ca24.jpg");
+    background-image: url("https://images.pexels.com/photos/314726/pexels-photo-314726.jpeg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 100vh;
     padding: 40px 20px 80px;
     box-sizing: border-box;
 }
@@ -22,6 +17,9 @@ body {
 /* --- ĐỊNH DẠNG KHUNG CHỨA --- */
 .container {
     width: 100%;
+    margin-left: auto;   /* Canh giữa layout */
+    margin-right: auto;  /* Canh giữa layout */
+    margin-bottom: 20px;
     background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(5px);
     padding: 30px 40px;
@@ -29,9 +27,7 @@ body {
     box-shadow: 0 8px 24px rgba(14, 21, 47, 0.08);
     box-sizing: border-box;
     transition: all 0.3s ease-in-out;
-    margin-bottom: 20px;
 }
-
 #login-page, #home-page, #form-page, #class-list-page, #user-bar {
     max-width: 800px;
 }
@@ -60,6 +56,16 @@ body {
 header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e9ecef; }
 header h1 { font-size: 2em; color: #0056b3; margin: 0 0 10px 0; }
 header p { color: #6c757d; font-size: 1.1em; }
+#schedule-details-page header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
 
 /* --- TRANG CHỦ --- */
 .home-buttons { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
@@ -91,14 +97,27 @@ form button[type="submit"]:hover { background-color: #218838; }
 .back-link { color: #007bff; text-decoration: none; font-weight: 500; }
 .back-link:hover { text-decoration: underline; }
 .error { color: red; text-align: center; margin-top: 15px; font-weight: 500; }
-#file-feedback { color: green; margin-top: 5px; }
 
 /* --- TRANG CHI TIẾT LỊCH --- */
 .lookup-wrapper { background-color: #eaf6ff; border: 1px solid #bce0fd; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
 #lookup-summary { margin-top: 15px; background-color: #fff; padding: 15px; border-radius: 8px; min-height: 50px; }
 #lookup-summary ul { padding-left: 20px; margin: 0; }
 #lookup-summary li { margin-bottom: 8px; }
-.table-title { text-align: center; color: #333; border-top: 1px solid #e9ecef; padding-top: 20px; margin-bottom: 20px; }
+.table-header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+    margin-bottom: 20px;
+}
+.table-title {
+    text-align: left;
+    color: #333;
+    border-top: none;
+    padding-top: 0;
+    margin-bottom: 0;
+}
 .table-wrapper { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 12px 15px; border: 1px solid #e9ecef; text-align: left; white-space: nowrap; }
@@ -108,60 +127,32 @@ tbody tr:hover { background-color: #e9ecef; }
 tbody tr.highlight { background-color: #fff3cd; }
 
 /* --- ĐỊNH DẠNG SỬA TÊN BÀI HỌC --- */
-.lesson-name-cell {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-.lesson-name-text {
-    flex-grow: 1;
-    outline: none;
-    padding: 2px 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-.lesson-name-text[contenteditable="true"] {
-    background-color: #eaf6ff;
-    outline: 2px solid #007bff;
-}
-.lesson-actions button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
-    padding: 4px;
-    line-height: 1;
-}
+.lesson-name-cell { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.lesson-name-text { flex-grow: 1; outline: none; padding: 2px 5px; border-radius: 4px; transition: background-color 0.2s ease; }
+.lesson-name-text[contenteditable="true"] { background-color: #eaf6ff; outline: 2px solid #007bff; }
+.lesson-actions button { background: none; border: none; cursor: pointer; font-size: 1.2em; padding: 4px; line-height: 1; }
 .lesson-actions .confirm-lesson-btn { color: #28a745; }
 .lesson-actions .cancel-lesson-btn { color: #dc3545; }
 .hidden { display: none; }
 
 /* --- ĐỊNH DẠNG NGÀY TEST TRÊN LỊCH --- */
-tbody tr.mini-test-day td {
-    background-color: #fff3cd;
-    font-weight: 700;
-    color: #856404;
-    text-align: center;
-}
-tbody tr.mini-test-day:hover td {
-    background-color: #ffeeba;
-}
-tbody tr.final-test-day td {
-    background-color: #f8d7da;
-    font-weight: 700;
-    color: #721c24;
-    text-align: center;
-}
-tbody tr.final-test-day:hover td {
-    background-color: #f5c6cb;
-}
+tbody tr.mini-test-day td { background-color: #fff3cd; font-weight: 700; color: #856404; text-align: center; }
+tbody tr.mini-test-day:hover td { background-color: #ffeeba; }
+tbody tr.final-test-day td { background-color: #f8d7da; font-weight: 700; color: #721c24; text-align: center; }
+tbody tr.final-test-day:hover td { background-color: #f5c6cb; }
 
 /* --- CỬA SỔ XÁC NHẬN XÓA (MODAL) --- */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 .modal-actions { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
-.modal-actions button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+button, .btn-secondary {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Be Vietnam Pro', sans-serif;
+}
 .btn-danger { background-color: #dc3545; color: white; }
 .btn-secondary { background-color: #6c757d; color: white; }
 
@@ -169,7 +160,6 @@ tbody tr.final-test-day:hover td {
 .footer-text {
     text-align: center;
     padding: 15px;
-    margin-top: auto;
     color: #3a3a3a;
     background-color: rgba(255, 255, 255, 0.9);
     width: 100%;
@@ -177,166 +167,48 @@ tbody tr.final-test-day:hover td {
     border-radius: 12px;
     box-sizing: border-box;
     font-weight: 500;
+    margin: 20px auto 0 auto;
 }
 
 /* --- KHUNG LỊCH HÔM NAY --- */
-#today-summary {
-    background-color: #eaf6ff;
-    border-left: 6px solid #007bff;
-    border-radius: 12px;
-    padding: 20px 25px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-#today-summary h2 {
-    margin-top: 0;
-    color: #0056b3;
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 1.5em;
-}
-#today-summary ul {
-    padding-left: 20px;
-    margin-top: 10px;
-    margin-bottom: 15px;
-}
-#today-summary li {
-    margin-bottom: 8px;
-    font-size: 1.05em;
-}
-#today-summary strong {
-    font-size: 1.1em;
-    color: #343a40;
-}
-#today-summary .no-class-message {
-    text-align: center;
-    font-weight: 500;
-    font-size: 1.1em;
-    color: #555;
-    padding: 10px 0;
-}
+#today-summary { background-color: #eaf6ff; border-left: 6px solid #007bff; border-radius: 12px; padding: 20px 25px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+#today-summary h2 { margin-top: 0; color: #0056b3; text-align: center; margin-bottom: 15px; font-size: 1.5em; }
+#today-summary ul { padding-left: 20px; margin-top: 10px; margin-bottom: 15px; }
+#today-summary li { margin-bottom: 8px; font-size: 1.05em; }
+#today-summary strong { font-size: 1.1em; color: #343a40; }
+#today-summary .no-class-message { text-align: center; font-weight: 500; font-size: 1.1em; color: #555; padding: 10px 0; }
 
 /* --- ĐỊNH DẠNG NÚT VÀ CỬA SỔ HƯỚNG DẪN --- */
 #show-csv-guide {
-    display: inline-block;
-    background-color: #007bff;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #6c757d;
     color: white;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    text-align: center;
-    line-height: 20px;
     font-weight: bold;
     cursor: pointer;
-    margin-left: 5px;
     font-size: 14px;
-}
-.modal-content-large {
-    max-width: 600px;
-    text-align: left;
-     max-height: 85vh; /* Giới hạn chiều cao tối đa bằng 85% chiều cao màn hình */
-    overflow-y: auto; /* Tự động thêm thanh cuộn dọc khi nội dung dài hơn */
-}
-
-.guide-section {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-.guide-section h4 {
-    margin-top: 0;
-    color: #0056b3;
-}
-.guide-section ol {
-    padding-left: 20px;
-}
-/* --- ĐỊNH DẠNG NÚT UPLOAD FILE MỚI --- */
-.file-upload-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.btn-upload {
-    display: inline-block;
-    padding: 10px 15px;
-    background-color: #5a6268;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
     transition: background-color 0.2s ease;
 }
-.btn-upload:hover {
-    background-color: #494f54;
+
+#show-csv-guide:hover {
+    background-color: #5a6268;
 }
-.file-input-hidden {
-    display: none;
-}
-#file-feedback {
-    display: block;
-    margin-top: 8px;
-    font-style: italic;
-    color: #555;
-}
+.modal-content-large { max-width: 600px; text-align: left; max-height: 85vh; overflow-y: auto; }
+.guide-container { display: flex; gap: 25px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+.guide-column { flex: 1; }
+.guide-section { margin-top: 0; padding-top: 0; border-top: none; }
+.file-upload-wrapper { display: flex; align-items: center; gap: 10px; }
+.btn-upload { display: inline-block; padding: 10px 15px; background-color: #5a6268; color: white; border-radius: 8px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; }
+.btn-upload:hover { background-color: #494f54; }
+.file-input-hidden { display: none; }
+#file-feedback { display: block; margin-top: 8px; font-style: italic; color: #555; }
 
-/* --- ĐỊNH DẠNG BỐ CỤC 2 CỘT CHO HƯỚNG DẪN --- */
-.guide-container {
-    display: flex;
-    gap: 25px; /* Khoảng cách giữa 2 cột */
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-.guide-column {
-    flex: 1; /* Chia đều không gian cho 2 cột */
-}
-.guide-section { /* Xóa bỏ các định dạng cũ của guide-section */
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-}
-/* --- CSS CHO THIẾT BỊ DI ĐỘNG (RESPONSIVE) --- */
-
-@media (max-width: 768px) {
-    body {
-        /* Giảm padding của trang trên điện thoại */
-        padding: 20px 10px 80px;
-    }
-
-    .container {
-        /* Giảm padding của các khung chính */
-        padding: 20px 15px;
-    }
-
-    header h1 {
-        /* Giảm kích thước tiêu đề chính */
-        font-size: 1.6em;
-    }
-    
-    header p {
-        font-size: 1em;
-    }
-
-    .home-buttons button {
-        /* Giảm padding và cỡ chữ cho các nút trang chủ */
-        padding: 15px;
-        font-size: 1.1em;
-    }
-
-    /* Danh sách lớp học: tự động chuyển thành 1 cột */
-    #class-list-container {
-        grid-template-columns: 1fr; /* Chỉ hiển thị 1 lớp mỗi hàng */
-    }
-
-    /* Giảm kích thước cho cửa sổ hướng dẫn trên điện thoại */
-    .modal-content-large {
-        max-width: 90vw; /* Chiếm 90% chiều rộng màn hình */
-        max-height: 80vh; /* Chiếm 80% chiều cao màn hình */
-    }
-
-    /* Hướng dẫn CSV: chuyển về 1 cột trên điện thoại */
-    .guide-container {
-        flex-direction: column;
-    }
-}
-
+/* --- ĐỊNH DẠNG MENU KHI BẤM VÀO BÚT CHÌ --- */
+.context-menu { position: fixed; display: none; background-color: white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1001; border: 1px solid #ddd; }
+.context-menu ul { list-style: none; padding: 5px; margin: 0; }
+.context-menu ul li { padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+.context-menu ul li:hover { background-color: #f0f0f0; }
