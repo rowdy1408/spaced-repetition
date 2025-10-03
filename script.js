@@ -426,6 +426,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const isFileUploaded = uploadedLessons.length > 0;
         const miniTestDatesRaw = document.getElementById('mini-test-dates').value;
 
+        const parseAndFormatDates = (datesRaw) => {
+            if (!datesRaw) return [];
+            return datesRaw.split(',').map(d => {
+                const trimmedDate = d.trim();
+                if (!trimmedDate) return null;
+                const parts = trimmedDate.split('/');
+                if (parts.length !== 3) return null;
+                return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+            }).filter(Boolean);
+        };
+
         let classData = {
             name: document.getElementById('class-name').value,
             courseType: document.getElementById('course-type').value,
@@ -434,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             numUnits: isFileUploaded ? 0 : document.getElementById('num-units').value,
             lessonsPerUnit: isFileUploaded ? 0 : document.getElementById('lessons-per-unit').value,
             startDate: isFileUploaded ? '' : document.getElementById('start-date').value,
-            miniTestDates: isFileUploaded ? [] : (miniTestDatesRaw ? miniTestDatesRaw.split(',').map(d => d.trim()).filter(d => d) : []),
+            miniTestDates: isFileUploaded ? [] : parseAndFormatDates(miniTestDatesRaw),
         };
 
         try {
@@ -551,12 +562,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         lessonTextSpan.dataset.originalName = newName;
                     } catch (error) {
                         console.error("Lỗi cập nhật tên bài học:", error);
-                        lessonTextSpan.textContent = lessonTextSpan.dataset.originalName; // Revert on error
+                        lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
                     }
                 } else {
                      lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
                 }
-            } else { // Cancel button
+            } else { 
                 lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
             }
         } else if (target.matches('.edit-lesson-btn')) {
