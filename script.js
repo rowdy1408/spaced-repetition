@@ -41,7 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeCsvGuideBtn = document.getElementById('btn-close-guide');
     const scheduleFileInput = document.getElementById('schedule-file');
     const fileFeedback = document.getElementById('file-feedback');
+    const pencilMenuModal = document.getElementById('pencil-menu-modal');
+    const menuEditName = document.getElementById('menu-edit-name');
+    const menuPostponeSession = document.getElementById('menu-postpone-session');
+    const btnUndo = document.getElementById('btn-undo');
     
+    // --- BIẾN TRẠNG THÁI ---
     let allClasses = [];
     let currentScheduleData = [];
     let currentUser = null;
@@ -49,6 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let deletingClassId = null;
     let currentClassId = null;
     let uploadedLessons = [];
+    let tempPostponedDates = [];
+    let activeLessonCell = null;
+    let lastScheduleState = null;
+    let lastPostponedDate = null;
 
     // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
@@ -69,17 +78,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${day}/${month}/${year}`;
     };
     const stringToDate = (dateStr) => new Date(dateStr.split('/').reverse().join('-'));
-    const isHoliday = (date) => {
+    const isHoliday = (date, extraHolidays = []) => {
+        const formattedDate = formatDate(date);
+        if (extraHolidays.includes(formattedDate)) return true;
         const yyyymmdd = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const mmdd = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         if (LUNAR_NEW_YEAR_DATES.includes(yyyymmdd)) return true;
         if (VIETNAMESE_HOLIDAYS_FIXED.includes(mmdd)) return true;
         return false;
     };
-    const findNextWorkDay = (startDate, scheduleDays) => {
+    const findNextWorkDay = (startDate, scheduleDays, extraHolidays = []) => {
         let nextDate = new Date(startDate.getTime());
         while (true) {
-            if (scheduleDays.includes(nextDate.getDay()) && !isHoliday(nextDate)) {
+            if (scheduleDays.includes(nextDate.getDay()) && !isHoliday(nextDate, extraHolidays)) {
                 break;
             }
             nextDate.setDate(nextDate.getDate() + 1);
@@ -142,36 +153,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    function generateSchedule(classData) {
+    function generateSchedule(classData, extraHolidays = []) {
         const { startDate, type, numUnits, courseType, lessonsPerUnit, miniTestDates = [], customLessonNames = {}, uploadedLessons = [] } = classData;
         const scheduleDays = CLASS_SCHEDULE_DAYS[type];
         const offsets = courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF;
         let scheduleData = [];
 
         if (uploadedLessons && uploadedLessons.length > 0) {
+            let currentDate = stringToDate(uploadedLessons[0].date);
             uploadedLessons.forEach((item, index) => {
+                const sessionDate = findNextWorkDay(currentDate, scheduleDays, extraHolidays);
                 const lessonKey = `lesson-${index}`;
                 scheduleData.push({
-                    isLesson: item.type === 'lesson',
+                    isLesson: item.type === 'lesson', 
                     isMiniTest: item.type === 'miniTest',
-                    lessonName: customLessonNames[lessonKey] || item.name,
+                    lessonName: customLessonNames[lessonKey] || item.name, 
                     lessonKey: lessonKey,
-                    lessonDate: item.date,
+                    lessonDate: formatDate(sessionDate),
                 });
+                currentDate = new Date(sessionDate.getTime());
+                currentDate.setDate(currentDate.getDate() + 1);
             });
-            scheduleData.sort((a, b) => stringToDate(a.lessonDate) - stringToDate(b.lessonDate));
         } else {
             const totalLessons = parseInt(numUnits, 10) * parseInt(lessonsPerUnit, 10);
             let currentDate = new Date(startDate + 'T00:00:00');
             let lessonCounter = 0;
             let sessionCounter = 0;
+            
             while(lessonCounter < totalLessons) {
-                // Giới hạn số buổi để tránh vòng lặp vô tận nếu nhập quá nhiều test
                 if (sessionCounter > totalLessons * 2 && totalLessons > 0) break; 
                 
-                const sessionDate = findNextWorkDay(currentDate, scheduleDays);
+                const sessionDate = findNextWorkDay(currentDate, scheduleDays, extraHolidays);
                 const formattedDate = formatDate(sessionDate);
-
+                
                 if (miniTestDates.includes(formattedDate)) {
                     scheduleData.push({ isMiniTest: true, lessonName: 'Mini Test', lessonDate: formattedDate });
                 } else {
@@ -180,10 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const lessonKey = `${unitNumber}-${lessonNumber}`;
                     const lessonName = `Unit ${unitNumber} lesson ${lessonNumber}`;
                     scheduleData.push({
-                        isLesson: true,
-                        lessonName: customLessonNames[lessonKey] || lessonName,
-                        lessonKey: lessonKey,
-                        lessonDate: formattedDate,
+                        isLesson: true, lessonName: customLessonNames[lessonKey] || lessonName,
+                        lessonKey: lessonKey, lessonDate: formattedDate,
                     });
                     lessonCounter++;
                 }
@@ -227,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const dayAfterLastEvent = new Date(latestDate.getTime());
         dayAfterLastEvent.setDate(dayAfterLastEvent.getDate() + 1);
-        const finalTestDate = findNextWorkDay(dayAfterLastEvent, scheduleDays || CLASS_SCHEDULE_DAYS['2-4']);
+        const finalTestDate = findNextWorkDay(dayAfterLastEvent, scheduleDays || CLASS_SCHEDULE_DAYS['2-4'], extraHolidays);
         scheduleData.push({ isFinalTest: true, lessonName: "Final Test", lessonDate: formatDate(finalTestDate) });
         
         scheduleData.sort((a, b) => stringToDate(a.lessonDate) - stringToDate(b.lessonDate));
@@ -380,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         classForm.reset();
         document.getElementById('start-date').valueAsDate = new Date();
         formErrorMessage.textContent = '';
-        fileFeedback.textContent = '';
+        fileFeedback.textContent = 'Chưa có file nào được chọn.';
         uploadedLessons = [];
         const manualInputs = [startDateInput, classTypeInput, document.getElementById('num-units'), document.getElementById('lessons-per-unit'), document.getElementById('mini-test-dates')];
         manualInputs.forEach(input => input.disabled = false);
@@ -457,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formTitle.textContent = '⚙️ Thiết Lập Thông Tin Lớp Học';
                 classForm.reset();
                 formErrorMessage.textContent = '';
-                fileFeedback.textContent = '';
+                fileFeedback.textContent = 'Chưa có file nào được chọn.';
                 
                 document.getElementById('class-name').value = selectedClass.name;
                 document.getElementById('course-type').value = selectedClass.courseType;
@@ -484,6 +496,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (classInfo) {
             const classId = classInfo.dataset.id;
             currentClassId = classId;
+            tempPostponedDates = [];
+            btnUndo.classList.add('hidden');
             const selectedClass = allClasses.find(cls => cls.id === classId);
             if (selectedClass) {
                 scheduleClassName.textContent = `🗓️ Lịch Học Chi Tiết - Lớp ${selectedClass.name}`;
@@ -498,64 +512,123 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     scheduleBody.addEventListener('click', async (e) => {
-        const target = e.target.closest('button');
-        if (!target) return;
+        const target = e.target;
+        const button = target.closest('button');
 
-        const actionsDiv = target.closest('.lesson-actions');
-        if (!actionsDiv) return;
+        if (!button) return;
 
-        const lessonCell = actionsDiv.closest('.lesson-name-cell');
-        const lessonTextSpan = lessonCell.querySelector('.lesson-name-text');
+        if (button.matches('.confirm-lesson-btn') || button.matches('.cancel-lesson-btn')) {
+            const actionsDiv = button.closest('.lesson-actions');
+            const lessonCell = actionsDiv.closest('.lesson-name-cell');
+            const lessonTextSpan = lessonCell.querySelector('.lesson-name-text');
+            const editBtn = actionsDiv.querySelector('.edit-lesson-btn');
+            const confirmBtn = actionsDiv.querySelector('.confirm-lesson-btn');
+            const cancelBtn = actionsDiv.querySelector('.cancel-lesson-btn');
+
+            lessonTextSpan.setAttribute('contenteditable', 'false');
+            editBtn.classList.remove('hidden');
+            confirmBtn.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+
+            if (button.matches('.confirm-lesson-btn')) {
+                const newName = lessonTextSpan.textContent.trim();
+                const lessonKey = actionsDiv.dataset.lessonKey;
+
+                if (currentClassId && lessonKey && newName && newName !== lessonTextSpan.dataset.originalName) {
+                    const classRef = getClassesRef().doc(currentClassId);
+                    try {
+                        await classRef.update({ [`customLessonNames.${lessonKey}`]: newName });
+                        const localClass = allClasses.find(c => c.id === currentClassId);
+                        if (!localClass.customLessonNames) localClass.customLessonNames = {};
+                        localClass.customLessonNames[lessonKey] = newName;
+                        const localScheduleItem = currentScheduleData.find(item => item.lessonKey === lessonKey);
+                        if (localScheduleItem) localScheduleItem.lessonName = newName;
+
+                        displayTodaySummary(currentScheduleData);
+                        if (lookupDateInput.value) {
+                           showSummaryForDate(formatDate(new Date(lookupDateInput.value + 'T00:00:00')));
+                        }
+                        lessonTextSpan.dataset.originalName = newName;
+                    } catch (error) {
+                        console.error("Lỗi cập nhật tên bài học:", error);
+                        lessonTextSpan.textContent = lessonTextSpan.dataset.originalName; // Revert on error
+                    }
+                } else {
+                     lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+                }
+            } else { // Cancel button
+                lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+            }
+        } else if (target.matches('.edit-lesson-btn')) {
+            activeLessonCell = target.closest('.lesson-name-cell');
+            pencilMenuModal.style.top = `${e.clientY + 5}px`;
+            pencilMenuModal.style.left = `${e.clientX - 100}px`;
+            pencilMenuModal.style.display = 'block';
+        }
+    });
+    
+    menuEditName.addEventListener('click', () => {
+        pencilMenuModal.style.display = 'none';
+        if (!activeLessonCell) return;
+        
+        const lessonTextSpan = activeLessonCell.querySelector('.lesson-name-text');
+        const actionsDiv = activeLessonCell.querySelector('.lesson-actions');
         const editBtn = actionsDiv.querySelector('.edit-lesson-btn');
         const confirmBtn = actionsDiv.querySelector('.confirm-lesson-btn');
         const cancelBtn = actionsDiv.querySelector('.cancel-lesson-btn');
 
-        if (target.matches('.edit-lesson-btn')) {
-            lessonTextSpan.setAttribute('contenteditable', 'true');
-            lessonTextSpan.focus();
-            document.execCommand('selectAll', false, null);
-            editBtn.classList.add('hidden');
-            confirmBtn.classList.remove('hidden');
-            cancelBtn.classList.remove('hidden');
-        } 
-        else if (target.matches('.confirm-lesson-btn')) {
-            lessonTextSpan.setAttribute('contenteditable', 'false');
-            const newName = lessonTextSpan.textContent.trim();
-            const lessonKey = actionsDiv.dataset.lessonKey;
+        lessonTextSpan.setAttribute('contenteditable', 'true');
+        lessonTextSpan.focus();
+        document.execCommand('selectAll', false, null);
+        editBtn.classList.add('hidden');
+        confirmBtn.classList.remove('hidden');
+        cancelBtn.classList.remove('hidden');
+    });
 
-            if (currentClassId && lessonKey && newName) {
-                const classRef = getClassesRef().doc(currentClassId);
-                try {
-                    await classRef.update({ [`customLessonNames.${lessonKey}`]: newName });
-                    
-                    const localClass = allClasses.find(c => c.id === currentClassId);
-                    if (!localClass.customLessonNames) localClass.customLessonNames = {};
-                    localClass.customLessonNames[lessonKey] = newName;
-                    
-                    const localScheduleItem = currentScheduleData.find(item => item.lessonKey === lessonKey);
-                    if (localScheduleItem) localScheduleItem.lessonName = newName;
+    menuPostponeSession.addEventListener('click', () => {
+        pencilMenuModal.style.display = 'none';
+        if (!activeLessonCell) return;
+        
+        lastScheduleState = JSON.parse(JSON.stringify(currentScheduleData));
 
-                    displayTodaySummary(currentScheduleData);
-                    if (lookupDateInput.value) {
-                       showSummaryForDate(formatDate(new Date(lookupDateInput.value + 'T00:00:00')));
-                    }
-                    lessonTextSpan.dataset.originalName = newName;
+        const row = activeLessonCell.parentElement;
+        const lessonDateStr = row.cells[2]?.textContent || 
+                              row.cells[0].textContent.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)[0];
+        
+        if (lessonDateStr && !tempPostponedDates.includes(lessonDateStr)) {
+            tempPostponedDates.push(lessonDateStr);
+            lastPostponedDate = lessonDateStr;
+        }
 
-                } catch (error) {
-                    console.error("Lỗi cập nhật tên bài học:", error);
-                    lessonTextSpan.textContent = "Lỗi!";
-                }
+        const selectedClass = allClasses.find(cls => cls.id === currentClassId);
+        if (selectedClass) {
+            currentScheduleData = generateSchedule(selectedClass, tempPostponedDates);
+            displaySchedule(currentScheduleData, selectedClass.courseType);
+            displayTodaySummary(currentScheduleData);
+            btnUndo.classList.remove('hidden');
+        }
+    });
+
+    btnUndo.addEventListener('click', () => {
+        if (lastScheduleState) {
+            currentScheduleData = lastScheduleState;
+            if (lastPostponedDate) {
+                tempPostponedDates = tempPostponedDates.filter(d => d !== lastPostponedDate);
             }
-            editBtn.classList.remove('hidden');
-            confirmBtn.classList.add('hidden');
-            cancelBtn.classList.add('hidden');
-        } 
-        else if (target.matches('.cancel-lesson-btn')) {
-            lessonTextSpan.setAttribute('contenteditable', 'false');
-            lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
-            editBtn.classList.remove('hidden');
-            confirmBtn.classList.add('hidden');
-            cancelBtn.classList.add('hidden');
+            
+            const selectedClass = allClasses.find(cls => cls.id === currentClassId);
+            displaySchedule(currentScheduleData, selectedClass.courseType);
+            displayTodaySummary(currentScheduleData);
+            
+            lastScheduleState = null;
+            lastPostponedDate = null;
+            btnUndo.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!pencilMenuModal.contains(e.target) && !e.target.matches('.edit-lesson-btn')) {
+            pencilMenuModal.style.display = 'none';
         }
     });
 
