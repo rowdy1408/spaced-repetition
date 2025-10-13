@@ -38,7 +38,10 @@ body {
     max-width: 1200px;
 }
 #app-content {
-    display: none; /* Sẽ được JS bật lên */
+    display: none;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
     flex-direction: column;
     align-items: center;
 }
@@ -191,4 +194,3 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 #quizlet-link-feedback.invalid {
     color: #dc3545;
 }
-
