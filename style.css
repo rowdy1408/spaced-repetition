@@ -31,7 +31,7 @@ body {
     box-sizing: border-box;
     transition: all 0.3s ease-in-out;
 }
-#login-page, #home-page, #form-page, #class-list-page, #user-bar {
+#login-page, #home-page, #form-page, #class-list-page, #user-bar, #app-content {
     max-width: 800px;
 }
 #schedule-details-page {
@@ -39,10 +39,6 @@ body {
 }
 #app-content {
     display: none; /* Sẽ được JS bật lên */
-    width: 100%;
-    max-width: 1200px; /* Giới hạn chiều rộng tối đa */
-    margin: 0 auto; /* Canh giữa */
-    display: flex;
     flex-direction: column;
     align-items: center;
 }
