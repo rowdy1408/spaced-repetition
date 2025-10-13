@@ -31,7 +31,7 @@ body {
     box-sizing: border-box;
     transition: all 0.3s ease-in-out;
 }
-#login-page, #home-page, #form-page, #class-list-page, #user-bar, #app-content {
+#login-page, #home-page, #form-page, #class-list-page, #user-bar {
     max-width: 800px;
 }
 #schedule-details-page {
@@ -191,3 +191,4 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 #quizlet-link-feedback.invalid {
     color: #dc3545;
 }
+
