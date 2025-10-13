@@ -44,6 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const pencilMenuModal = document.getElementById('pencil-menu-modal');
     const menuEditName = document.getElementById('menu-edit-name');
     const menuPostponeSession = document.getElementById('menu-postpone-session');
+    const quizletLinkModal = document.getElementById('quizlet-link-modal');
+    const quizletLinkInput = document.getElementById('quizlet-link-input');
+    const quizletLinkFeedback = document.getElementById('quizlet-link-feedback');
+    const btnSaveQuizletLink = document.getElementById('btn-save-quizlet-link');
+    const btnCancelQuizletLink = document.getElementById('btn-cancel-quizlet-link');
+    const quizletMenuModal = document.getElementById('quizlet-menu-modal');
+    const menuOpenQuizlet = document.getElementById('menu-open-quizlet');
+    const menuAddEditQuizlet = document.getElementById('menu-add-edit-quizlet');
     const btnUndo = document.getElementById('btn-undo');
     
     // --- BIẾN TRẠNG THÁI ---
@@ -56,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedLessons = [];
     let tempPostponedDates = [];
     let activeLessonCell = null;
-    let scheduleHistory = []; // Thay thế lastScheduleState bằng một mảng lịch sử
+    let activeLessonKey = null;
+    let scheduleHistory = [];
 
     // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
@@ -96,13 +105,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return nextDate;
     };
+    const isValidQuizletLink = (url) => {
+        if (!url) return false;
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname === 'quizlet.com';
+        } catch (e) {
+            return false;
+        }
+    };
     
     // --- CÁC HÀM CHÍNH ---
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
             loginPage.style.display = 'none';
-            appContent.style.display = 'block';
+            appContent.style.display = 'flex';
             userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
             loadClassesFromFirestore().then(() => showPage('home-page'));
         } else {
@@ -246,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return scheduleData;
     }
     
-    function displaySchedule(scheduleData, courseType) {
+    function displaySchedule(scheduleData, courseType, quizletLinks = {}) {
         scheduleHeader.innerHTML = '';
         const headerRow = document.createElement('tr');
         let headers = ['Buổi', 'Bài học', 'Ngày học', 'Ôn lần 1', 'Ôn lần 2', 'Ôn lần 3', 'Ôn lần 4'];
@@ -267,12 +285,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.innerHTML = `<td colspan="${headers.length}">🏆 ${item.lessonName} - ${item.lessonDate}</td>`;
             } else { // isLesson
                 sessionCounter++;
+                const hasQuizletLink = quizletLinks && quizletLinks[item.lessonKey];
                 let rowHTML = `
                     <td>${sessionCounter}</td>
                     <td class="lesson-name-cell">
                         <span class="lesson-name-text" contenteditable="false" data-original-name="${item.lessonName}">${item.lessonName}</span>
-                        <div class="lesson-actions" data-lesson-key="${item.lessonKey}">
-                            <button class="edit-lesson-btn" title="Sửa tên">✏️</button>
+                        <div class="lesson-actions">
+                            <button class="quizlet-btn ${hasQuizletLink ? 'active' : ''}" data-lesson-key="${item.lessonKey}" title="Quản lý link Quizlet">🗂️</button>
+                            <button class="edit-lesson-btn" title="Quản lý buổi học">✏️</button>
                             <button class="confirm-lesson-btn hidden" title="Xác nhận">✔️</button>
                             <button class="cancel-lesson-btn hidden" title="Hủy">❌</button>
                         </div>
@@ -451,9 +471,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (editingClassId) {
                 const existingClass = allClasses.find(c => c.id === editingClassId);
                 classData.customLessonNames = existingClass.customLessonNames || {};
+                classData.quizletLinks = existingClass.quizletLinks || {};
                 await getClassesRef().doc(editingClassId).update(classData);
             } else {
                 classData.customLessonNames = {};
+                classData.quizletLinks = {};
                 await getClassesRef().add(classData);
             }
         } catch (error) { console.error("Lỗi lưu lớp:", error); }
@@ -513,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedClass) {
                 scheduleClassName.textContent = `🗓️ Lịch Học Chi Tiết - Lớp ${selectedClass.name}`;
                 currentScheduleData = generateSchedule(selectedClass);
-                displaySchedule(currentScheduleData, selectedClass.courseType);
+                displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
                 displayTodaySummary(currentScheduleData);
                 lookupDateInput.value = '';
                 lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
@@ -525,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleBody.addEventListener('click', async (e) => {
         const target = e.target;
         const button = target.closest('button');
-
         if (!button) return;
 
         if (button.matches('.confirm-lesson-btn') || button.matches('.cancel-lesson-btn')) {
@@ -570,11 +591,25 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { 
                 lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
             }
-        } else if (target.matches('.edit-lesson-btn')) {
-            activeLessonCell = target.closest('.lesson-name-cell');
+        } else if (button.matches('.edit-lesson-btn')) {
+            activeLessonCell = button.closest('.lesson-name-cell');
             pencilMenuModal.style.top = `${e.clientY + 5}px`;
             pencilMenuModal.style.left = `${e.clientX - 100}px`;
             pencilMenuModal.style.display = 'block';
+            quizletMenuModal.style.display = 'none';
+        } 
+        else if (button.matches('.quizlet-btn')) {
+            activeLessonKey = button.dataset.lessonKey;
+            const selectedClass = allClasses.find(c => c.id === currentClassId);
+            const hasLink = selectedClass && selectedClass.quizletLinks && selectedClass.quizletLinks[activeLessonKey];
+            
+            menuOpenQuizlet.style.display = hasLink ? 'block' : 'none';
+            menuAddEditQuizlet.textContent = hasLink ? '✏️ Sửa/Xóa Link Quizlet' : '➕ Thêm Link Quizlet';
+
+            quizletMenuModal.style.top = `${e.clientY + 5}px`;
+            quizletMenuModal.style.left = `${e.clientX - 100}px`;
+            quizletMenuModal.style.display = 'block';
+            pencilMenuModal.style.display = 'none';
         }
     });
     
@@ -613,10 +648,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedClass = allClasses.find(cls => cls.id === currentClassId);
         if (selectedClass) {
             currentScheduleData = generateSchedule(selectedClass, tempPostponedDates);
-            displaySchedule(currentScheduleData, selectedClass.courseType);
+            displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
             displayTodaySummary(currentScheduleData);
             btnUndo.classList.remove('hidden');
         }
+    });
+
+    menuOpenQuizlet.addEventListener('click', () => {
+        quizletMenuModal.style.display = 'none';
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        const url = selectedClass.quizletLinks[activeLessonKey];
+        if (url) {
+            window.open(url, '_blank');
+        }
+    });
+
+    menuAddEditQuizlet.addEventListener('click', () => {
+        quizletMenuModal.style.display = 'none';
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        const currentLink = selectedClass.quizletLinks?.[activeLessonKey] || '';
+        quizletLinkInput.value = currentLink;
+        quizletLinkInput.dispatchEvent(new Event('input'));
+        quizletLinkModal.style.display = 'flex';
     });
 
     btnUndo.addEventListener('click', () => {
@@ -625,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tempPostponedDates.pop();
             
             const selectedClass = allClasses.find(cls => cls.id === currentClassId);
-            displaySchedule(currentScheduleData, selectedClass.courseType);
+            displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
             displayTodaySummary(currentScheduleData);
             
             if (scheduleHistory.length === 0) {
@@ -634,9 +687,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    quizletLinkInput.addEventListener('input', () => {
+        const link = quizletLinkInput.value.trim();
+        if (link === '') {
+            quizletLinkFeedback.textContent = 'Để trống và Lưu để xóa link.';
+            quizletLinkFeedback.className = '';
+            btnSaveQuizletLink.disabled = false;
+        } else if (isValidQuizletLink(link)) {
+            quizletLinkFeedback.textContent = '✅ Link hợp lệ.';
+            quizletLinkFeedback.className = 'valid';
+            btnSaveQuizletLink.disabled = false;
+        } else {
+            quizletLinkFeedback.textContent = '❌ Link phải bắt đầu bằng https://quizlet.com/';
+            quizletLinkFeedback.className = 'invalid';
+            btnSaveQuizletLink.disabled = true;
+        }
+    });
+
+    btnCancelQuizletLink.addEventListener('click', () => {
+        quizletLinkModal.style.display = 'none';
+    });
+
+    btnSaveQuizletLink.addEventListener('click', async () => {
+        const newLink = quizletLinkInput.value.trim();
+        const classRef = getClassesRef().doc(currentClassId);
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+
+        try {
+            if (newLink === '') {
+                await classRef.update({ [`quizletLinks.${activeLessonKey}`]: firebase.firestore.FieldValue.delete() });
+                if (selectedClass.quizletLinks) {
+                    delete selectedClass.quizletLinks[activeLessonKey];
+                }
+            } else {
+                await classRef.update({ [`quizletLinks.${activeLessonKey}`]: newLink });
+                if (!selectedClass.quizletLinks) selectedClass.quizletLinks = {};
+                selectedClass.quizletLinks[activeLessonKey] = newLink;
+            }
+            displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
+        } catch (error) {
+            console.error("Lỗi cập nhật link Quizlet:", error);
+            alert('Đã có lỗi xảy ra, không thể lưu link.');
+        }
+        
+        quizletLinkModal.style.display = 'none';
+    });
+
     document.addEventListener('click', (e) => {
         if (!pencilMenuModal.contains(e.target) && !e.target.matches('.edit-lesson-btn')) {
             pencilMenuModal.style.display = 'none';
+        }
+        if (!quizletMenuModal.contains(e.target) && !e.target.matches('.quizlet-btn')) {
+            quizletMenuModal.style.display = 'none';
         }
     });
 
