@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let scheduleHistory = [];
 
     // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
+    // ... (Không đổi)
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
     const REVIEW_OFFSETS_SMF = [1, 3, 6, 10];
     const REVIEW_OFFSETS_KET = [1, 2, 4, 8, 16];
