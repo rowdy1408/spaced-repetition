@@ -734,10 +734,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('click', (e) => {
-        if (!pencilMenuModal.contains(e.target) && !e.target.matches('.edit-lesson-btn')) {
+        if (pencilMenuModal && !pencilMenuModal.contains(e.target) && !e.target.matches('.edit-lesson-btn')) {
             pencilMenuModal.style.display = 'none';
         }
-        if (!quizletMenuModal.contains(e.target) && !e.target.matches('.quizlet-btn')) {
+        if (quizletMenuModal && !quizletMenuModal.contains(e.target) && !e.target.matches('.quizlet-btn')) {
             quizletMenuModal.style.display = 'none';
         }
     });
