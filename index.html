@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Hệ Thống Quản Lý Lớp Học</title>
-    <link rel="icon" type="image/png" href="https://i.pinimg.com/736x/d4/4f/71/d44f715534a1827fcb5af4fa2663eb8d.jpg">
+    <link rel="icon" type="image/png" href="https://i.pinimg.com/736x/c4/dd/3f/c4dd3f0696ccc6790f6ee84ff2031a5b.jpg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,8 +21,7 @@
         </main>
     </div>
 
-    <div id="app-content" style="display:none;">
-        
+    <div id="app-content">
         <div id="user-bar" class="container">
             <div id="user-info"></div>
             <button id="btn-logout" class="btn-secondary">Đăng xuất</button>
@@ -140,7 +139,6 @@
                 </div>
             </main>
         </div>
-
     </div>
 
     <div id="delete-confirm-modal" class="modal-overlay" style="display:none;">
@@ -163,8 +161,8 @@
                 <div class="guide-column">
                     <h4>⚠️ Yêu cầu định dạng file</h4>
                     <p>File của bạn bắt buộc phải có dòng tiêu đề chứa cột <strong>"Bài học"</strong> và cột <strong>"Ngày học"</strong>. Định dạng ngày phải là <code>DD/MM/YYYY</code>.</p>
-                    <img src="https://i.pinimg.com/736x/63/a8/04/63a80429da3e7d92308a003b770fcfce.jpg" alt="Định dạng file CSV mẫu có ngày học" style="width:100%; border:1px solid #ddd; border-radius: 8px;">
-                    <p style="margin-top:10px;"><em>Lưu ý: Không dùng Google Docs. Chỉ dùng Google Sheets hoặc Excel. Trong cột "Bài học" BẮT BUỘC có take note Mini test.</em></p>
+                    <img src="https://i.imgur.com/eBODc3p.png" alt="Định dạng file CSV mẫu có ngày học" style="width:100%; border:1px solid #ddd; border-radius: 8px;">
+                    <p style="margin-top:10px;"><em>Lưu ý: Không dùng Google Docs. Chỉ dùng Google Sheets hoặc Excel.</em></p>
                 </div>
                 <div class="guide-column">
                     <h4>📄 Hướng dẫn cho Google Sheets</h4>
@@ -194,6 +192,28 @@
             <li id="menu-edit-name">Chỉnh sửa tên bài</li>
             <li id="menu-postpone-session">Tạm hoãn buổi này (Lớp nghỉ)</li>
         </ul>
+    </div>
+
+    <div id="quizlet-menu-modal" class="context-menu" style="display: none;">
+        <ul>
+            <li id="menu-open-quizlet">➡️ Mở Link Quizlet</li>
+            <li id="menu-add-edit-quizlet">✏️ Thêm/Sửa Link Quizlet</li>
+        </ul>
+    </div>
+    
+    <div id="quizlet-link-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h3>Thêm/Sửa Link Quizlet</h3>
+            <div class="control-group" style="text-align: left;">
+                <label for="quizlet-link-input">Dán đường link Quizlet vào đây:</label>
+                <input type="url" id="quizlet-link-input" placeholder="https://quizlet.com/...">
+                <small id="quizlet-link-feedback"></small>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-save-quizlet-link" class="btn-primary">Lưu</button>
+                <button id="btn-cancel-quizlet-link" class="btn-secondary">Hủy</button>
+            </div>
+        </div>
     </div>
     
     <div class="footer-text">
