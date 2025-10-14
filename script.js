@@ -68,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let scheduleHistory = [];
 
     // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
-    // ... (Không đổi)
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
     const REVIEW_OFFSETS_SMF = [1, 3, 6, 10];
     const REVIEW_OFFSETS_KET = [1, 2, 4, 8, 16];
@@ -291,8 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${sessionCounter}</td>
                     <td class="lesson-name-cell">
                         <span class="lesson-name-text" contenteditable="false" data-original-name="${item.lessonName}">${item.lessonName}</span>
-                        <div class="lesson-actions">
-                            <button class="quizlet-btn ${hasQuizletLink ? 'active' : ''}" data-lesson-key="${item.lessonKey}" title="Quản lý link Quizlet">🗂️</button>
+                        <div class="lesson-actions" data-lesson-key="${item.lessonKey}">
+                            <button class="quizlet-btn ${hasQuizletLink ? 'active' : ''}"  title="Quản lý link Quizlet">🗂️</button>
                             <button class="edit-lesson-btn" title="Quản lý buổi học">✏️</button>
                             <button class="confirm-lesson-btn hidden" title="Xác nhận">✔️</button>
                             <button class="cancel-lesson-btn hidden" title="Hủy">❌</button>
@@ -546,73 +545,77 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     scheduleBody.addEventListener('click', async (e) => {
-        const target = e.target;
-        const button = target.closest('button');
-        if (!button) return;
+    const target = e.target;
+    const button = target.closest('button');
+    if (!button) return;
 
-        if (button.matches('.confirm-lesson-btn') || button.matches('.cancel-lesson-btn')) {
-            const actionsDiv = button.closest('.lesson-actions');
-            const lessonCell = actionsDiv.closest('.lesson-name-cell');
-            const lessonTextSpan = lessonCell.querySelector('.lesson-name-text');
-            const editBtn = actionsDiv.querySelector('.edit-lesson-btn');
-            const confirmBtn = actionsDiv.querySelector('.confirm-lesson-btn');
-            const cancelBtn = actionsDiv.querySelector('.cancel-lesson-btn');
+    // Lấy thẻ div cha và lessonKey ngay từ đầu
+    const actionsDiv = button.closest('.lesson-actions');
+    if (!actionsDiv) return; // Bỏ qua nếu nút không nằm trong actions
+    const lessonKey = actionsDiv.dataset.lessonKey;
 
-            lessonTextSpan.setAttribute('contenteditable', 'false');
-            editBtn.classList.remove('hidden');
-            confirmBtn.classList.add('hidden');
-            cancelBtn.classList.add('hidden');
+    if (button.matches('.confirm-lesson-btn') || button.matches('.cancel-lesson-btn')) {
+        const lessonCell = actionsDiv.closest('.lesson-name-cell');
+        const lessonTextSpan = lessonCell.querySelector('.lesson-name-text');
+        const editBtn = actionsDiv.querySelector('.edit-lesson-btn');
+        const confirmBtn = actionsDiv.querySelector('.confirm-lesson-btn');
+        const cancelBtn = actionsDiv.querySelector('.cancel-lesson-btn');
 
-            if (button.matches('.confirm-lesson-btn')) {
-                const newName = lessonTextSpan.textContent.trim();
-                const lessonKey = actionsDiv.dataset.lessonKey;
+        lessonTextSpan.setAttribute('contenteditable', 'false');
+        editBtn.classList.remove('hidden');
+        confirmBtn.classList.add('hidden');
+        cancelBtn.classList.add('hidden');
 
-                if (currentClassId && lessonKey && newName && newName !== lessonTextSpan.dataset.originalName) {
-                    const classRef = getClassesRef().doc(currentClassId);
-                    try {
-                        await classRef.update({ [`customLessonNames.${lessonKey}`]: newName });
-                        const localClass = allClasses.find(c => c.id === currentClassId);
-                        if (!localClass.customLessonNames) localClass.customLessonNames = {};
-                        localClass.customLessonNames[lessonKey] = newName;
-                        const localScheduleItem = currentScheduleData.find(item => item.lessonKey === lessonKey);
-                        if (localScheduleItem) localScheduleItem.lessonName = newName;
-
-                        displayTodaySummary(currentScheduleData);
-                        if (lookupDateInput.value) {
-                           showSummaryForDate(formatDate(new Date(lookupDateInput.value + 'T00:00:00')));
-                        }
-                        lessonTextSpan.dataset.originalName = newName;
-                    } catch (error) {
-                        console.error("Lỗi cập nhật tên bài học:", error);
-                        lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
-                    }
-                } else {
-                     lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
-                }
-            } else { 
-                lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
-            }
-        } else if (button.matches('.edit-lesson-btn')) {
-            activeLessonCell = button.closest('.lesson-name-cell');
-            pencilMenuModal.style.top = `${e.clientY + 5}px`;
-            pencilMenuModal.style.left = `${e.clientX - 100}px`;
-            pencilMenuModal.style.display = 'block';
-            quizletMenuModal.style.display = 'none';
-        } 
-        else if (button.matches('.quizlet-btn')) {
-            activeLessonKey = button.dataset.lessonKey;
-            const selectedClass = allClasses.find(c => c.id === currentClassId);
-            const hasLink = selectedClass && selectedClass.quizletLinks && selectedClass.quizletLinks[activeLessonKey];
+        if (button.matches('.confirm-lesson-btn')) {
+            const newName = lessonTextSpan.textContent.trim();
             
-            menuOpenQuizlet.style.display = hasLink ? 'block' : 'none';
-            menuAddEditQuizlet.textContent = hasLink ? '✏️ Sửa/Xóa Link Quizlet' : '➕ Thêm Link Quizlet';
+            // Bây giờ `lessonKey` đã hợp lệ!
+            if (currentClassId && lessonKey && newName && newName !== lessonTextSpan.dataset.originalName) {
+                const classRef = getClassesRef().doc(currentClassId);
+                try {
+                    await classRef.update({ [`customLessonNames.${lessonKey}`]: newName });
+                    const localClass = allClasses.find(c => c.id === currentClassId);
+                    if (!localClass.customLessonNames) localClass.customLessonNames = {};
+                    localClass.customLessonNames[lessonKey] = newName;
+                    const localScheduleItem = currentScheduleData.find(item => item.lessonKey === lessonKey);
+                    if (localScheduleItem) localScheduleItem.lessonName = newName;
 
-            quizletMenuModal.style.top = `${e.clientY + 5}px`;
-            quizletMenuModal.style.left = `${e.clientX - 100}px`;
-            quizletMenuModal.style.display = 'block';
-            pencilMenuModal.style.display = 'none';
+                    displayTodaySummary(currentScheduleData);
+                    if (lookupDateInput.value) {
+                       showSummaryForDate(formatDate(new Date(lookupDateInput.value + 'T00:00:00')));
+                    }
+                    lessonTextSpan.dataset.originalName = newName;
+                } catch (error) {
+                    console.error("Lỗi cập nhật tên bài học:", error);
+                    lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+                }
+            } else {
+                 lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+            }
+        } else { 
+            lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
         }
-    });
+    } else if (button.matches('.edit-lesson-btn')) {
+        activeLessonCell = button.closest('.lesson-name-cell');
+        pencilMenuModal.style.top = `${e.clientY + 5}px`;
+        pencilMenuModal.style.left = `${e.clientX - 100}px`;
+        pencilMenuModal.style.display = 'block';
+        quizletMenuModal.style.display = 'none';
+    } 
+    else if (button.matches('.quizlet-btn')) {
+        activeLessonKey = lessonKey; // Sử dụng lessonKey đã lấy ở trên
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        const hasLink = selectedClass && selectedClass.quizletLinks && selectedClass.quizletLinks[activeLessonKey];
+        
+        menuOpenQuizlet.style.display = hasLink ? 'block' : 'none';
+        menuAddEditQuizlet.textContent = hasLink ? '✏️ Sửa/Xóa Link Quizlet' : '➕ Thêm Link Quizlet';
+
+        quizletMenuModal.style.top = `${e.clientY + 5}px`;
+        quizletMenuModal.style.left = `${e.clientX - 100}px`;
+        quizletMenuModal.style.display = 'block';
+        pencilMenuModal.style.display = 'none';
+    }
+});
     
     menuEditName.addEventListener('click', () => {
         pencilMenuModal.style.display = 'none';
