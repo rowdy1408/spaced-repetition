@@ -38,7 +38,7 @@ body {
     max-width: 1200px;
 }
 #app-content {
-    display: none;
+    display: none; /* Sẽ được JS bật lên */
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
