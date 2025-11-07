@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContent = document.getElementById('app-content');
     const userInfo = document.getElementById('user-info');
     const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnGuestLogin = document.getElementById('btn-guest-login');
     const btnLogout = document.getElementById('btn-logout');
     const pages = document.querySelectorAll('#app-content .page');
     const classForm = document.getElementById('class-form');
@@ -66,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeLessonCell = null;
     let activeLessonKey = null;
     let scheduleHistory = [];
+    let isGuestMode = false;
 
     // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
@@ -117,28 +119,42 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- CÁC HÀM CHÍNH ---
     auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            loginPage.style.display = 'none';
-            appContent.style.display = 'flex';
-            userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
-            loadClassesFromFirestore().then(() => showPage('home-page'));
-        } else {
-            currentUser = null;
-            loginPage.style.display = 'block';
-            appContent.style.display = 'none';
-        }
-    });
+    if (user) {
+        isGuestMode = false; // Đảm bảo reset khi user thật đăng nhập
+        currentUser = user;
+        loginPage.style.display = 'none';
+        appContent.style.display = 'flex';
+        userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
+        loadClassesFromFirestore().then(() => showPage('home-page'));
+    } else {
+        isGuestMode = false; // Reset khi đăng xuất
+        currentUser = null;
+        loginPage.style.display = 'block';
+        appContent.style.display = 'none';
+    }
+});
 
-    const getClassesRef = () => db.collection('users').doc(currentUser.uid).collection('classes');
+    const getClassesRef = () => {
+    // THÊM ĐOẠN KIỂM TRA NÀY
+    if (isGuestMode || !currentUser || !currentUser.uid) {
+        return null; // Không trả về gì nếu là khách
+    } 
+    return db.collection('users').doc(currentUser.uid).collection('classes')
+    };
 
     const loadClassesFromFirestore = async () => {
+        if (isGuestMode) {
+        allClasses = []; // Khách luôn bắt đầu với danh sách trống
+        return;
+    }
         if (!currentUser) return;
+        const classesRef = getClassesRef();
+        if (!classesRef) return; // Bỏ qua nếu là khách
         try {
-            const snapshot = await getClassesRef().orderBy("name").get();
-            allClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } catch (error) { console.error("Lỗi tải danh sách lớp:", error); }
-    };
+            const snapshot = await classesRef.orderBy("name").get();
+        allClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) { console.error("Lỗi tải danh sách lớp:", error); }
+};
     
     const renderClassList = () => {
         classListContainer.innerHTML = '';
@@ -403,7 +419,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => console.error("Lỗi đăng nhập Google:", error));
     });
-    btnLogout.addEventListener('click', () => auth.signOut());
+
+    btnGuestLogin.addEventListener('click', () => {
+    const confirmed = confirm("Bạn đang đăng nhập với tư cách khách. Mọi dữ liệu lớp học sẽ bị mất khi bạn đăng xuất. Bạn có muốn tiếp tục không?");
+    if (confirmed) {
+        isGuestMode = true;
+        currentUser = { displayName: 'Khách' }; // Tạo user giả
+        loginPage.style.display = 'none';
+        appContent.style.display = 'flex';
+        userInfo.innerHTML = `Xin chào, <strong>Khách</strong>! (Chế độ tạm thời)`;
+        allClasses = []; // Bắt đầu với mảng trống
+        renderClassList(); // Hiển thị danh sách trống
+        showPage('home-page');
+    }
+    });
+
+    btnLogout.addEventListener('click', () => {
+    if (isGuestMode) {
+        // Đăng xuất khách: Chỉ cần reset về trang login
+        isGuestMode = false;
+        currentUser = null;
+        allClasses = []; // Xóa dữ liệu tạm
+        loginPage.style.display = 'block';
+        appContent.style.display = 'none';
+    } else {
+        // Đăng xuất người dùng thật
+        auth.signOut();
+    }
+    });
 
     document.getElementById('btn-show-create-form').addEventListener('click', () => {
         editingClassId = null;
@@ -466,6 +509,30 @@ document.addEventListener('DOMContentLoaded', () => {
             startDate: isFileUploaded ? '' : document.getElementById('start-date').value,
             miniTestDates: isFileUploaded ? [] : parseAndFormatDates(miniTestDatesRaw),
         };
+
+        if (isGuestMode) {
+        if (editingClassId) {
+            // Sửa lớp trong mảng local
+            const index = allClasses.findIndex(c => c.id === editingClassId);
+            if (index > -1) {
+                const existingClass = allClasses[index];
+                classData.customLessonNames = existingClass.customLessonNames || {};
+                classData.quizletLinks = existingClass.quizletLinks || {};
+                classData.id = editingClassId;
+                allClasses[index] = classData;
+            }
+        } else {
+            // Thêm lớp mới vào mảng local
+            classData.customLessonNames = {};
+            classData.quizletLinks = {};
+            classData.id = `guest_${new Date().getTime()}`; // Tạo ID tạm
+            allClasses.push(classData);
+        }
+        
+        renderClassList();
+        showPage('class-list-page');
+        return; // Dừng ở đây, không lưu vào Firestore
+    }
 
         try {
             if (editingClassId) {
@@ -571,6 +638,23 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Bây giờ `lessonKey` đã hợp lệ!
             if (currentClassId && lessonKey && newName && newName !== lessonTextSpan.dataset.originalName) {
+                if (isGuestMode) {
+                // Chỉ cập nhật vào mảng local
+                const localClass = allClasses.find(c => c.id === currentClassId);
+                if (localClass) {
+                    if (!localClass.customLessonNames) localClass.customLessonNames = {};
+                    localClass.customLessonNames[lessonKey] = newName;
+                }
+                const localScheduleItem = currentScheduleData.find(item => item.lessonKey === lessonKey);
+                if (localScheduleItem) localScheduleItem.lessonName = newName;
+
+                displayTodaySummary(currentScheduleData);
+                if (lookupDateInput.value) {
+                   showSummaryForDate(formatDate(new Date(lookupDateInput.value + 'T00:00:00')));
+                }
+                lessonTextSpan.dataset.originalName = newName;
+            }
+            else{
                 const classRef = getClassesRef().doc(currentClassId);
                 try {
                     await classRef.update({ [`customLessonNames.${lessonKey}`]: newName });
@@ -589,6 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Lỗi cập nhật tên bài học:", error);
                     lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
                 }
+            }
             } else {
                  lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
             }
@@ -716,7 +801,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const newLink = quizletLinkInput.value.trim();
         const classRef = getClassesRef().doc(currentClassId);
         const selectedClass = allClasses.find(c => c.id === currentClassId);
-
+    if (isGuestMode) {
+        if (!selectedClass.quizletLinks) selectedClass.quizletLinks = {};
+        if (newLink === '') {
+            delete selectedClass.quizletLinks[activeLessonKey];
+        } else {
+            selectedClass.quizletLinks[activeLessonKey] = newLink;
+        }
+        displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
+        quizletLinkModal.style.display = 'none';
+        return; // Dừng ở đây
+    }
         try {
             if (newLink === '') {
                 await classRef.update({ [`quizletLinks.${activeLessonKey}`]: firebase.firestore.FieldValue.delete() });
@@ -757,6 +852,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnConfirmDelete.addEventListener('click', async () => {
         if (!deletingClassId) return;
+        if (isGuestMode) {
+        allClasses = allClasses.filter(c => c.id !== deletingClassId);
+        renderClassList();
+        hideDeleteModal();
+        return; // Dừng ở đây
+    }
         try {
             await getClassesRef().doc(deletingClassId).delete();
         } catch (error) { console.error("Lỗi xóa lớp:", error); }
