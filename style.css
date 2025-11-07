@@ -194,3 +194,41 @@ button:disabled { background-color: #ccc; cursor: not-allowed; }
 #quizlet-link-feedback.invalid {
     color: #dc3545;
 }
+
+/* --- TÙY CHỈNH TRANG ĐĂNG NHẬP --- */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+#btn-google-login, #btn-guest-login {
+    width: 280px; 
+    box-sizing: border-box;
+    justify-content: center;
+}
+
+#btn-guest-login {
+    background-color: #4285F4; /* Màu xanh của Google */
+    color: white;
+    border: 1px solid #4285F4; /* Border cùng màu */
+    display: flex; /* Để icon và text trên cùng một hàng */
+    align-items: center;
+    gap: 10px; /* Khoảng cách giữa icon và text */
+    padding: 12px 15px; /* Điều chỉnh padding cho phù hợp */
+    font-size: 1.05em; /* Giữ kích thước chữ */
+    border-radius: 5px; /* Làm tròn góc giống nút Google */
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Thêm hiệu ứng hover */
+}
+
+#btn-guest-login:hover {
+    background-color: #357ae8; /* Màu đậm hơn khi hover */
+}
+
+#btn-guest-login img {
+    height: 24px; /* Kích thước icon incognito */
+    width: 24px;
+    filter: brightness(0) invert(1); /* Đổi màu icon SVG từ xanh Google sang trắng để nổi bật trên nền xanh */
+}
