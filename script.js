@@ -510,24 +510,41 @@ document.addEventListener('DOMContentLoaded', () => {
             dateGroup.className = 'review-day-group';
             dateGroup.innerHTML = `<div class="review-date-header">${dateStr}</div>`;
             tasks.forEach(task => {
-                const isCompleted = student.completedTasks && student.completedTasks.includes(task.taskId);
-                const taskEl = document.createElement('div');
-                taskEl.className = `review-task ${isCompleted ? 'completed' : ''}`;
-                taskEl.innerHTML = `
-                    <div><strong>${task.lessonName}</strong> <small>(${task.type})</small></div>
-                    <button class="btn-check-task">${isCompleted ? '✔' : ''}</button>
-                `;
-                if (!isCompleted) {
-                    taskEl.querySelector('.btn-check-task').addEventListener('click', async () => {
-                         student.exp = (student.exp || 0) + EXP_REWARD;
-                         if (!student.completedTasks) student.completedTasks = [];
-                         student.completedTasks.push(task.taskId);
-                         await saveStudents(currentClassId, currentStudents);
-                         openStudentDetail(studentIndex); 
-                    });
-                }
-                dateGroup.appendChild(taskEl);
-            });
+    const isCompleted = student.completedTasks && student.completedTasks.includes(task.taskId);
+    
+    const taskEl = document.createElement('div');
+    taskEl.className = `review-task ${isCompleted ? 'completed' : ''}`;
+    taskEl.innerHTML = `
+        <div><strong>${task.lessonName}</strong> <small>(${task.type})</small></div>
+        <button class="btn-check-task">${isCompleted ? '✔' : ''}</button>
+    `;
+
+    // LOGIC MỚI: Xử lý cả Tick và Untick
+    const btnCheck = taskEl.querySelector('.btn-check-task');
+    btnCheck.addEventListener('click', async () => {
+        if (!student.completedTasks) student.completedTasks = [];
+
+        if (isCompleted) {
+            // TRƯỜNG HỢP HỦY (UNTICK): Trừ điểm và xóa task khỏi danh sách
+            if (confirm("Hủy hoàn thành bài này và thu hồi 20 EXP?")) {
+                student.exp = Math.max(0, (student.exp || 0) - EXP_REWARD); // Không trừ quá 0
+                student.completedTasks = student.completedTasks.filter(id => id !== task.taskId);
+            } else {
+                return; // Nếu chọn Cancel thì không làm gì cả
+            }
+        } else {
+            // TRƯỜNG HỢP TICK: Cộng điểm (như cũ)
+            student.exp = (student.exp || 0) + EXP_REWARD;
+            student.completedTasks.push(task.taskId);
+        }
+
+        // Lưu và tải lại popup
+        await saveStudents(currentClassId, currentStudents);
+        openStudentDetail(studentIndex); 
+    });
+
+    dateGroup.appendChild(taskEl);
+});
             UI.studentReviewSchedule.appendChild(dateGroup);
         });
         UI.studentDetailModal.style.display = 'flex';
@@ -649,7 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentStudents = cls.students || [];
             document.getElementById('manage-class-title').textContent = `Quản Lý: ${cls.name}`;
             renderStudentGrid();
-            showPage('manage-class-page');
+            document.getElementById('manage-class-modal').style.display = 'flex';
+        
         } else if (e.target.closest('.edit-btn')) {
             editingClassId = clsId;
             const cls = allClasses.find(c => c.id === clsId);
@@ -876,4 +894,73 @@ Chúc các con làm bài tốt! ❤`;
     });
     document.getElementById('show-csv-guide').addEventListener('click', () => UI.csvGuideModal.style.display = 'flex');
     document.getElementById('btn-close-guide').addEventListener('click', () => UI.csvGuideModal.style.display = 'none');
+
+    /* =========================================
+       FIX LỖI & BỔ SUNG LOGIC (Dán đoạn này vào cuối script.js, trước dấu đóng '})')
+       ========================================= */
+
+    // 1. FIX LỖI TRA CỨU NGÀY (Chuyển đổi YYYY-MM-DD sang DD/MM/YYYY)
+    const lookupInput = document.getElementById('lookup-date');
+    if (lookupInput) {
+        lookupInput.addEventListener('change', (e) => {
+            const rawDate = e.target.value; // Dạng 2025-12-30
+            if (!rawDate) return;
+            
+            // Chuyển sang dạng 30/12/2025 để khớp dữ liệu
+            const [year, month, day] = rawDate.split('-');
+            const formattedDate = `${day}/${month}/${year}`;
+            
+            displaySummary(currentScheduleData, formattedDate);
+        });
+    }
+
+    // 2. FIX LỖI NÚT CHỈNH SỬA TÊN BÀI HỌC
+    // Xử lý khi bấm vào dòng "Chỉnh sửa tên bài" trong menu bút chì
+    const menuEditName = document.getElementById('menu-edit-name');
+    if (menuEditName) {
+        menuEditName.addEventListener('click', async () => {
+            // Ẩn menu đi
+            UI.pencilMenu.style.display = 'none';
+            
+            if (!activeLessonKey) return;
+            
+            // Tìm bài học trong dữ liệu
+            const item = currentScheduleData.find(i => i.lessonKey === activeLessonKey);
+            if (!item) return;
+
+            // Hiện hộp thoại nhập tên mới
+            const newName = prompt("Nhập tên bài học mới:", item.lessonName);
+            
+            if (newName && newName.trim() !== "") {
+                // Cập nhật giao diện ngay lập tức
+                if (activeLessonCell) {
+                    const textSpan = activeLessonCell.querySelector('.lesson-name-text');
+                    if (textSpan) textSpan.textContent = newName;
+                }
+
+                // Cập nhật vào dữ liệu lưu trữ (Firebase hoặc Local)
+                item.lessonName = newName;
+                
+                // Lưu customLessonNames vào database
+                const cls = allClasses.find(c => c.id === currentClassId);
+                if (!cls.customLessonNames) cls.customLessonNames = {};
+                cls.customLessonNames[activeLessonKey] = newName;
+
+                if (isGuestMode) {
+                    alert("Đã sửa tên (Chế độ Khách)");
+                } else {
+                    await getClassesRef().doc(currentClassId).update({
+                        customLessonNames: cls.customLessonNames
+                    });
+                }
+            }
+        });
+    }
+
+    const btnCloseManage = document.getElementById('btn-close-manage');
+if(btnCloseManage) {
+    btnCloseManage.addEventListener('click', () => {
+        document.getElementById('manage-class-modal').style.display = 'none';
+    });
+}
 });
