@@ -392,3 +392,8 @@ tbody tr.final-test-day td { background-color: #ffe3e6; color: #721c24; font-wei
 .attendance-item { display: flex; justify-content: space-between; padding: 12px 10px; border-bottom: 1px solid #f1f1f1; align-items: center; }
 .attendance-item:last-child { border-bottom: none; }
 .attendance-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--success-color); }
+
+/* Mở rộng chiều ngang cho trang Quản lý lớp để không bị lọt hình */
+#manage-class-page {
+    max-width: 1200px;
+}
