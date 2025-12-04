@@ -379,6 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="lesson-name-cell">
                         <span class="lesson-name-text" contenteditable="false" data-original-name="${item.lessonName}">${item.lessonName}</span>
                         <div class="lesson-actions" data-lesson-key="${item.lessonKey}">
+                            <button class="btn-report" title="Tạo báo cáo buổi học">📢</button> 
+                            
                             <button class="quizlet-btn ${hasQuizletLink ? 'active' : ''}"  title="Quản lý link Quizlet">🗂️</button>
                             <button class="edit-lesson-btn" title="Quản lý buổi học">✏️</button>
                             <button class="confirm-lesson-btn hidden" title="Xác nhận">✔️</button>
@@ -1164,4 +1166,157 @@ document.addEventListener('DOMContentLoaded', () => {
     showCsvGuideBtn.addEventListener('click', () => csvGuideModal.style.display = 'flex');
     closeCsvGuideBtn.addEventListener('click', () => csvGuideModal.style.display = 'none');
     csvGuideModal.addEventListener('click', (e) => { if (e.target === csvGuideModal) csvGuideModal.style.display = 'none'; });
+
+// --- LOGIC BÁO BÀI (CLASS REPORT) ---
+    const reportModal = document.getElementById('report-modal');
+    const reportContentTextarea = document.getElementById('report-content');
+    const btnCopyReport = document.getElementById('btn-copy-report');
+    const btnCloseReport = document.getElementById('btn-close-report');
+    const copyStatus = document.getElementById('copy-status');
+
+    // Hàm tạo nội dung báo cáo
+    const generateReportContent = (currentLessonKey) => {
+        // 1. Tìm thông tin buổi học hiện tại
+        const currentIndex = currentScheduleData.findIndex(item => item.lessonKey === currentLessonKey);
+        if (currentIndex === -1) return '';
+        
+        const currentItem = currentScheduleData[currentIndex];
+        const currentDateStr = currentItem.lessonDate; // DD/MM/YYYY
+        const currentDateObj = stringToDate(currentDateStr);
+
+        // 2. Tìm bài cũ đã ôn hôm nay (Review Today)
+        const reviewTodayList = [];
+        currentScheduleData.forEach(item => {
+            if (!item.isLesson) return;
+            // Kiểm tra xem bài này có lịch ôn rơi vào hôm nay không
+            if ([item.review1, item.review2, item.review3, item.review4, item.review5].includes(currentDateStr)) {
+                reviewTodayList.push(item.lessonName);
+            }
+        });
+
+        // 3. Xác định buổi học tiếp theo
+        let nextSessionItem = null;
+        for (let i = currentIndex + 1; i < currentScheduleData.length; i++) {
+            if (currentScheduleData[i].isLesson || currentScheduleData[i].isMiniTest || currentScheduleData[i].isFinalTest) {
+                nextSessionItem = currentScheduleData[i];
+                break;
+            }
+        }
+
+        // 4. Tìm các bài cần ôn TẠI NHÀ (Logic Mới: Tính theo ngày thực tế)
+        let tasksInRange = [];
+        let nextDateStr = "Chưa xác định";
+
+        if (nextSessionItem) {
+            nextDateStr = nextSessionItem.lessonDate;
+            const nextDateObj = stringToDate(nextDateStr);
+
+            // Lấy cấu hình ngày ôn dựa trên loại lớp (KET/PET hay SMF)
+            const selectedClass = allClasses.find(c => c.id === currentClassId);
+            const offsets = (selectedClass && selectedClass.courseType === 'ket-pet') 
+                            ? REVIEW_OFFSETS_KET  // [1, 2, 4, 8, 16]
+                            : REVIEW_OFFSETS_SMF; // [1, 3, 6, 10]
+
+            // Quét tất cả các bài đã học để tính ngày rơi điểm rơi phong độ
+            currentScheduleData.forEach(item => {
+                if (!item.isLesson) return;
+                
+                const itemDateObj = stringToDate(item.lessonDate);
+                
+                // Tính toán lại ngày ôn theo công thức: Ngày học + Offset (ngày)
+                offsets.forEach((daysToAdd, index) => {
+                    // Tạo ngày ôn dự kiến
+                    const reviewDate = new Date(itemDateObj.getTime());
+                    reviewDate.setDate(reviewDate.getDate() + daysToAdd);
+                    
+                    // KIỂM TRA: Ngày ôn có nằm lọt thỏm giữa "Hôm nay" và "Buổi tới" không?
+                    // Logic: Hôm nay < Ngày ôn < Buổi tới
+                    if (reviewDate.getTime() > currentDateObj.getTime() && reviewDate.getTime() < nextDateObj.getTime()) {
+                        
+                        tasksInRange.push({
+                            dateObj: reviewDate,
+                            dateStr: formatDate(reviewDate).substring(0, 5), // Lấy dd/mm
+                            name: item.lessonName,
+                            type: `Ôn lần ${index + 1}`
+                        });
+                    }
+                });
+            });
+
+            // Sắp xếp danh sách task theo thứ tự ngày tăng dần
+            tasksInRange.sort((a, b) => a.dateObj - b.dateObj);
+        }
+
+        // 5. Tạo mẫu văn bản
+        let report = `📅 *BÁO CÁO HỌC TẬP - ${currentDateStr}*\n`;
+        report += `--------------------------------\n`;
+        
+        // Phần 1: Hôm nay học gì
+        report += `✅ *Hôm nay lớp đã học:*\n`;
+        report += `   • Bài mới: ${currentItem.lessonName}\n`;
+        if (reviewTodayList.length > 0) {
+            reviewTodayList.forEach(name => report += `   • Ôn tập: ${name}\n`);
+        } else {
+            report += `   • (Không có bài cũ cần ôn hôm nay)\n`;
+        }
+
+        // Phần 2: Nhiệm vụ về nhà
+        report += `\n🏠 *Nhiệm vụ ôn tập tại nhà:*\n`;
+        report += `(Từ nay đến trước buổi học tới)\n`;
+        
+        if (tasksInRange.length > 0) {
+            tasksInRange.forEach(task => {
+                // Ví dụ: ▫ 30/09: Greetings (Ôn lần 1)
+                report += `   ▫ ${task.dateStr}: ${task.name} (${task.type})\n`;
+            });
+        } else {
+            report += `   ▫ Các con nghỉ ngơi, không có lịch ôn xen kẽ.\n`;
+        }
+
+        // Phần 3: Buổi sau
+        if (nextSessionItem) {
+            report += `\n🔜 *Buổi học tiếp theo (${nextDateStr}):*\n`;
+            report += `   • Chuẩn bị: ${nextSessionItem.lessonName}\n`;
+            if (nextSessionItem.isMiniTest) report += `   🔔 LƯU Ý: CÓ BÀI KIỂM TRA MINI TEST!\n`;
+        }
+
+        report += `\n👩‍🏫 *Nhận xét giáo viên:* \n`;
+        report += `   ........................................`;
+
+        return report;
+    };
+
+    // Sự kiện Click nút Báo bài trong bảng
+    scheduleBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-report');
+        if (btn) {
+            const actionsDiv = btn.closest('.lesson-actions');
+            const lessonKey = actionsDiv.dataset.lessonKey;
+            
+            const content = generateReportContent(lessonKey);
+            reportContentTextarea.value = content;
+            copyStatus.style.display = 'none';
+            reportModal.style.display = 'flex';
+        }
+    });
+
+    // Sự kiện nút Copy
+    btnCopyReport.addEventListener('click', () => {
+        reportContentTextarea.select();
+        reportContentTextarea.setSelectionRange(0, 99999); // Cho mobile
+        navigator.clipboard.writeText(reportContentTextarea.value).then(() => {
+            copyStatus.style.display = 'block';
+            setTimeout(() => copyStatus.style.display = 'none', 3000);
+        });
+    });
+
+    // Sự kiện đóng modal
+    btnCloseReport.addEventListener('click', () => {
+        reportModal.style.display = 'none';
+    });
+
+    // Click ra ngoài để đóng
+    reportModal.addEventListener('click', (e) => {
+        if (e.target === reportModal) reportModal.style.display = 'none';
+    });    
 });
