@@ -525,3 +525,15 @@ tr.task-done .task-date {
 
 .btn-delete-stu { color: #dc3545; }
 .btn-delete-stu:hover { background-color: #f8d7da; }
+
+/* Thêm vào file style.css */
+.btn-report {
+    color: #fd7e14; /* Màu cam nổi bật */
+}
+.btn-report:hover {
+    background-color: #fff4e6;
+}
+textarea {
+    resize: vertical; /* Cho phép kéo giãn khung nhập liệu */
+    line-height: 1.5;
+}
