@@ -53,7 +53,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuOpenQuizlet = document.getElementById('menu-open-quizlet');
     const menuAddEditQuizlet = document.getElementById('menu-add-edit-quizlet');
     const btnUndo = document.getElementById('btn-undo');
-    
+    const studentListPage = document.getElementById('student-list-page');
+    const studentDetailPage = document.getElementById('student-detail-page');
+    const studentListContainer = document.getElementById('student-list-container');
+    const btnAddStudent = document.getElementById('btn-add-student');
+    const addStudentModal = document.getElementById('add-student-modal');
+    const addStudentForm = document.getElementById('add-student-form');
+    const btnCancelAddStudent = document.getElementById('btn-cancel-add-student');
+    const newStudentAvatarInput = document.getElementById('new-student-avatar');
+    const avatarPreviewImg = document.getElementById('avatar-preview-img');
+
+    // Biến cho trang chi tiết
+    const detailStudentName = document.getElementById('detail-student-name');
+    const detailStudentAvatar = document.getElementById('detail-student-avatar');
+    const detailStudentRank = document.getElementById('detail-student-rank');
+    const detailXpBar = document.getElementById('detail-xp-bar');
+    const detailXpText = document.getElementById('detail-xp-text');
+    const studentProgressBody = document.getElementById('student-progress-body');
+
+    let currentStudentId = null;
+    let currentClassStudents = []; // Lưu danh sách HS của lớp đang chọn
+
+    // CẤU HÌNH GAMIFICATION
+    const XP_PER_LESSON = 20;
+    const XP_PER_LEVEL = 80;
+    const RANKS = [
+        "Lính Mới", "Tập Sự", "Người Học Việc", "Thành Thạo", 
+        "Chuyên Gia", "Bậc Thầy", "Đại Kiện Tướng", "Huyền Thoại", "Thần Thánh"
+    ];
+    // Offset ngày ôn tập cho cá nhân (tính theo ngày thực)
+    const PERSONAL_REVIEW_OFFSETS = [1, 3, 7, 14, 30];
     // --- BIẾN TRẠNG THÁI ---
     let allClasses = [];
     let currentScheduleData = [];
@@ -140,10 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error("Lỗi tải danh sách lớp:", error); }
     };
     
-    const renderClassList = () => {
+const renderClassList = () => {
         classListContainer.innerHTML = '';
         if (allClasses.length === 0) {
-            classListContainer.innerHTML = '<p>Chưa có lớp nào được tạo. Hãy tạo lớp học đầu tiên của bạn!</p>';
+            classListContainer.innerHTML = '<p>Chưa có lớp nào được tạo.</p>';
             return;
         }
         allClasses.forEach(cls => {
@@ -153,16 +182,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const lessonCount = cls.uploadedLessons?.length > 0 ? cls.uploadedLessons.length : (cls.numUnits * cls.lessonsPerUnit);
             const startDateString = cls.startDate || cls.uploadedLessons[0]?.date?.split('/').reverse().join('-') || new Date().toISOString().split('T')[0];
 
+            // --- THAY ĐỔI Ở ĐÂY: THÊM NÚT ĐIỂM DANH ---
             classItem.innerHTML = `
                 <div class="class-info" data-id="${cls.id}">
                     <h3>${cls.name}</h3>
-                    <p><strong>Loại chương trình:</strong> ${courseTypeName}</p>
-                    <p><strong>Cấu trúc:</strong> ${lessonCount || 'N/A'} buổi học</p>
-                    <p><strong>Lịch học:</strong> ${cls.type || 'Theo file'}</p>
-                    <p><strong>Khai giảng:</strong> ${new Date(startDateString + 'T00:00:00').toLocaleDateString('vi-VN')}</p>
+                    <p><strong>Loại:</strong> ${courseTypeName}</p>
+                    <p><strong>Số buổi:</strong> ${lessonCount || 'N/A'}</p>
                 </div>
                 <div class="class-item-actions">
-                    <button class="edit-btn" data-id="${cls.id}">⚙️ Thiết lập</button>
+                    <button class="btn-attendance" data-id="${cls.id}">🎓 Ôn tập</button>
+                    <button class="edit-btn" data-id="${cls.id}">⚙️ Sửa</button>
                     <button class="delete-btn" data-id="${cls.id}">🗑️ Xóa</button>
                 </div>
             `;
@@ -485,11 +514,21 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage('class-list-page');
     });
 
-    classListContainer.addEventListener('click', (e) => {
+    classListContainer.addEventListener('click', async (e) => {
         const classInfo = e.target.closest('.class-info');
         const editBtn = e.target.closest('.edit-btn');
         const deleteBtn = e.target.closest('.delete-btn');
+        const attendanceBtn = e.target.closest('.btn-attendance');
 
+        if (attendanceBtn) {
+            // Xử lý mở trang điểm danh
+            currentClassId = attendanceBtn.dataset.id;
+            const selectedClass = allClasses.find(c => c.id === currentClassId);
+            document.getElementById('student-class-name').textContent = `🎓 Lớp ${selectedClass.name} - Học viên`;
+            await loadStudents(currentClassId);
+            showPage('student-list-page');
+        }
+            
         if (deleteBtn) {
             deletingClassId = deleteBtn.dataset.id;
             showDeleteModal();
@@ -860,4 +899,392 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsText(file);
     });
+
+    // --- CÁC HÀM XỬ LÝ HỌC VIÊN & GAMIFICATION ---
+
+    const getStudentsRef = (classId) => db.collection('users').doc(currentUser.uid).collection('classes').doc(classId).collection('students');
+
+    const loadStudents = async (classId) => {
+        studentListContainer.innerHTML = '<p>Đang tải...</p>';
+        try {
+            const snapshot = await getStudentsRef(classId).orderBy('name').get();
+            currentClassStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderStudentList();
+        } catch (error) {
+            console.error("Lỗi tải DS học viên:", error);
+            studentListContainer.innerHTML = '<p>Lỗi tải dữ liệu.</p>';
+        }
+    };
+
+    const renderStudentList = () => {
+        studentListContainer.innerHTML = '';
+        if (currentClassStudents.length === 0) {
+            studentListContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">Chưa có học viên nào. Hãy thêm học viên mới!</p>';
+            return;
+        }
+
+        currentClassStudents.forEach(stu => {
+            const level = Math.floor(stu.exp / XP_PER_LEVEL) + 1;
+            const expInLevel = stu.exp % XP_PER_LEVEL;
+            const rankName = RANKS[Math.min(level - 1, RANKS.length - 1)];
+            const percent = (expInLevel / XP_PER_LEVEL) * 100;
+
+            const card = document.createElement('div');
+            card.className = 'student-card';
+            card.innerHTML = `
+                <div class="avatar-wrapper">
+                    <img src="${stu.avatar}" alt="${stu.name}">
+                </div>
+                <h3>${stu.name}</h3>
+                <span class="level-badge">Level ${level}: ${rankName}</span>
+                <div style="margin-top: 10px; text-align: left;">
+                    <small>EXP: ${stu.exp}</small>
+                    <div class="xp-progress-mini">
+                        <div class="xp-fill-mini" style="width: ${percent}%"></div>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => openStudentDetail(stu));
+            studentListContainer.appendChild(card);
+        });
+    };
+
+    // Hàm mở trang chi tiết để check bài
+    const openStudentDetail = (student) => {
+        currentStudentId = student.id;
+        detailStudentName.textContent = student.name;
+        detailStudentAvatar.src = student.avatar;
+        
+        updateStudentUIStats(student);
+        renderStudentProgressTable(student);
+        showPage('student-detail-page');
+    };
+
+    const updateStudentUIStats = (student) => {
+        const level = Math.floor(student.exp / XP_PER_LEVEL) + 1;
+        const expInLevel = student.exp % XP_PER_LEVEL;
+        const rankName = RANKS[Math.min(level - 1, RANKS.length - 1)];
+        const percent = (expInLevel / XP_PER_LEVEL) * 100;
+
+        detailStudentRank.textContent = `Danh hiệu: ${rankName} (Level ${level})`;
+        detailXpText.textContent = `${expInLevel}/${XP_PER_LEVEL} EXP`;
+        detailXpBar.style.width = `${percent}%`;
+    };
+
+    // --- (Thay thế từ dòng renderStudentProgressTable trở xuống) ---
+
+// 1. Hàm render bảng Spaced Repetition (Đã fix lỗi định dạng ngày)
+    const renderStudentProgressTable = (student) => {
+        studentProgressBody.innerHTML = '';
+        
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        // Lấy toàn bộ lịch dự kiến của lớp
+        const baseSchedule = generateSchedule(selectedClass); 
+        
+        const completedLessons = student.completedLessons || {}; 
+        const dailyStatus = student.dailyStatus || {}; 
+
+        // Chọn bộ offset dựa trên loại lớp
+        // Starters-Movers-Flyers: [1, 3, 6, 10]
+        // KET-PET: [1, 2, 4, 8, 16]
+        const currentReviewOffsets = selectedClass.courseType === 'ket-pet' 
+            ? REVIEW_OFFSETS_KET 
+            : REVIEW_OFFSETS_SMF; 
+
+        let allTasks = [];
+
+        baseSchedule.forEach(item => {
+        // Chỉ xử lý các item là bài học (bỏ qua Mini Test, Final Test nếu không muốn ôn tập chúng theo chu kỳ này)
+        if (!item.isLesson) return;
+
+        // 1. Convert ngày học dự kiến sang Date Object chuẩn
+        const lessonDate = stringToDate(item.lessonDate);
+        if (!lessonDate || isNaN(lessonDate.getTime())) return;
+
+        // --- TASK 1: BÀI HỌC MỚI ---
+        allTasks.push({
+            date: lessonDate,
+            dateStr: item.lessonDate, // Giữ nguyên string DD/MM/YYYY để gom nhóm
+            content: item.lessonName,
+            type: 'new',
+            lessonKey: item.lessonKey
+        });
+
+        // --- TASK 2: CÁC NGÀY ÔN TẬP (Tính toán trước) ---
+        // Lặp qua mảng offset (ví dụ: [1, 3, 7...]) để tạo ra các ngày ôn tập tương lai
+        currentReviewOffsets.forEach((offset, index) => {
+            // Tính ngày review = Ngày học dự kiến + số ngày offset
+            const reviewDate = new Date(lessonDate);
+            reviewDate.setDate(reviewDate.getDate() + offset);
+
+            allTasks.push({
+                date: reviewDate,
+                dateStr: formatDate(reviewDate), // Convert ngược lại thành chuỗi DD/MM/YYYY
+                content: item.lessonName, // Tên bài cần ôn
+                type: 'review',
+                stage: index + 1, // Lần ôn 1, 2, 3...
+                lessonKey: item.lessonKey
+            });
+        });
+    });
+        // C. GOM NHÓM (GROUP BY DATE) - Logic giữ nguyên
+        const grouped = {};
+        allTasks.forEach(task => {
+            if (!grouped[task.dateStr]) {
+                grouped[task.dateStr] = {
+                    dateObj: task.date,
+                    tasks: [],
+                    hasNewLesson: false,
+                    newLessonKeys: []
+                };
+            }
+            grouped[task.dateStr].tasks.push(task);
+            
+            if (task.type === 'new') {
+                grouped[task.dateStr].hasNewLesson = true;
+                grouped[task.dateStr].newLessonKeys.push(task.lessonKey);
+            }
+        });
+
+        // D. SẮP XẾP VÀ RENDER
+        const sortedDates = Object.keys(grouped).sort((a, b) => {
+            // Sort dựa trên Date Object để đảm bảo đúng thứ tự thời gian
+            return grouped[a].dateObj - grouped[b].dateObj;
+        });
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        sortedDates.forEach(dateStr => {
+            const groupData = grouped[dateStr];
+            const isDone = dailyStatus[dateStr] === true;
+            const isToday = groupData.dateObj.getTime() === today.getTime();
+
+            const tr = document.createElement('tr');
+            if (isDone) tr.classList.add('task-done');
+
+            // Cột 1: Ngày
+            let dateHtml = `<div class="task-date ${isToday ? 'is-today' : ''}">${dateStr}`;
+            if (isToday) dateHtml += `<span class="today-badge">Hôm nay</span>`;
+            dateHtml += `</div>`;
+
+            // Cột 2: Nội dung
+            let contentHtml = `<ul class="task-list">`;
+            groupData.tasks.forEach(t => {
+                let badge = '';
+                if (t.type === 'new') {
+                    badge = `<span class="task-badge badge-new">✨ Bài mới</span>`;
+                } else {
+                    badge = `<span class="task-badge badge-review">🚀 Ôn lần ${t.stage}</span>`;
+                }
+                contentHtml += `
+                    <li class="task-item">
+                        <span class="task-name">${t.content}</span>
+                        ${badge}
+                    </li>
+                `;
+            });
+            contentHtml += `</ul>`;
+
+            // Cột 3: Checkbox
+            const checkboxHtml = `
+                <div class="task-checkbox-wrapper">
+                    <input type="checkbox" class="daily-checkbox" 
+                        data-date="${dateStr}"
+                        data-new-keys='${JSON.stringify(groupData.newLessonKeys)}'
+                        ${isDone ? 'checked' : ''}>
+                </div>
+            `;
+
+            tr.innerHTML = `
+                <td style="vertical-align: top;">${dateHtml}</td>
+                <td style="vertical-align: top;">${contentHtml}</td>
+                <td style="vertical-align: middle;">${checkboxHtml}</td>
+            `;
+            studentProgressBody.appendChild(tr);
+        });
+
+        // Gán sự kiện click cho checkbox
+        document.querySelectorAll('.daily-checkbox').forEach(chk => {
+            chk.addEventListener('change', (e) => handleCheckDaily(e, student));
+        });
+    };
+
+    // 2. Hàm xử lý khi tick checkbox (Logic mới)
+    const handleCheckDaily = async (e, student) => {
+        const checkbox = e.target;
+        const dateStr = checkbox.dataset.date;
+        const isChecked = checkbox.checked;
+        const newLessonKeys = JSON.parse(checkbox.dataset.newKeys || "[]"); // Lấy danh sách bài mới trong ngày đó
+        
+        // Cập nhật Optimistic UI (Giao diện trước)
+        let newExp = student.exp;
+        let newCompleted = { ...student.completedLessons };
+        let newDailyStatus = { ...(student.dailyStatus || {}) };
+
+        // 1. Cập nhật trạng thái ngày
+        if (isChecked) {
+            newDailyStatus[dateStr] = true;
+            // Cộng điểm: Mỗi ngày hoàn thành được thưởng XP (VD: 50 XP cho trọn vẹn 1 ngày)
+            // Hoặc tính theo số bài trong ngày. Ở đây mình làm đơn giản là +20 XP cho 1 ngày clear sạch.
+            newExp += XP_PER_LESSON;
+
+            // 2. QUAN TRỌNG: Nếu ngày này có "Bài học mới", phải đánh dấu bài đó là Đã học
+            // để hệ thống tự sinh ra các ngày ôn tập sau này.
+            newLessonKeys.forEach(key => {
+                if (!newCompleted[key]) {
+                    newCompleted[key] = dateStr; // Lưu ngày hoàn thành là ngày của lịch
+                }
+            });
+
+        } else {
+            // Bỏ tick
+            delete newDailyStatus[dateStr];
+            newExp = Math.max(0, newExp - XP_PER_LESSON);
+
+            // Tùy chọn: Có xóa trạng thái "Đã học" của bài mới không?
+            // Thường là CÓ, nếu bỏ tick ngày đó tức là chưa học xong.
+            newLessonKeys.forEach(key => {
+                delete newCompleted[key];
+            });
+        }
+
+        // Cập nhật Object student cục bộ để render lại ngay lập tức
+        student.exp = newExp;
+        student.completedLessons = newCompleted;
+        student.dailyStatus = newDailyStatus;
+
+        updateStudentUIStats(student);
+        renderStudentProgressTable(student); // Re-render để thấy các ngày ôn tập mới sinh ra (nếu có)
+
+        // Lưu xuống Firebase
+        try {
+            await getStudentsRef(currentClassId).doc(student.id).update({
+                exp: newExp,
+                completedLessons: newCompleted,
+                dailyStatus: newDailyStatus
+            });
+        } catch (err) {
+            console.error("Lỗi lưu tiến độ:", err);
+            alert("Lỗi kết nối server!");
+            // Revert UI nếu cần
+        }
+    };
+
+    const handleCheckLesson = async (e, student) => {
+        const checkbox = e.target;
+        const lessonKey = checkbox.dataset.key;
+        const isChecked = checkbox.checked;
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Optimistic UI Update (Cập nhật giao diện ngay lập tức)
+        let newExp = student.exp;
+        let newCompleted = { ...student.completedLessons };
+
+        if (isChecked) {
+            newExp += XP_PER_LESSON;
+            newCompleted[lessonKey] = todayStr;
+        } else {
+            newExp = Math.max(0, newExp - XP_PER_LESSON);
+            delete newCompleted[lessonKey];
+        }
+
+        // Cập nhật biến cục bộ để UI mượt
+        student.exp = newExp;
+        student.completedLessons = newCompleted;
+        updateStudentUIStats(student);
+        renderStudentProgressTable(student);
+
+        // Lưu xuống Firestore
+        try {
+            await getStudentsRef(currentClassId).doc(student.id).update({
+                exp: newExp,
+                completedLessons: newCompleted
+            });
+        } catch (err) {
+            console.error("Lỗi lưu tiến độ:", err);
+            alert("Lỗi kết nối, không lưu được tiến độ!");
+            // Revert nếu lỗi (có thể làm kỹ hơn)
+            checkbox.checked = !isChecked; 
+        }
+    };
+
+    // --- LOGIC MODAL THÊM HỌC VIÊN ---
+    btnAddStudent.addEventListener('click', () => {
+        addStudentForm.reset();
+        avatarPreviewImg.src = "https://via.placeholder.com/100";
+        addStudentModal.style.display = 'flex';
+    });
+
+    btnCancelAddStudent.addEventListener('click', () => addStudentModal.style.display = 'none');
+
+    // Xử lý xem trước ảnh
+    newStudentAvatarInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => avatarPreviewImg.src = ev.target.result;
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Xử lý lưu học viên (Resize ảnh -> Base64)
+    addStudentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('new-student-name').value;
+        const file = newStudentAvatarInput.files[0];
+
+        if (!file) { alert("Vui lòng chọn ảnh đại diện!"); return; }
+
+        const submitBtn = addStudentForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Đang xử lý...";
+
+        // Resize ảnh để tránh nặng Database (Firestore giới hạn 1MB/doc)
+        resizeImageToDataURL(file, 200, 200, async (base64Img) => {
+            try {
+                await getStudentsRef(currentClassId).add({
+                    name: name,
+                    avatar: base64Img,
+                    exp: 0,
+                    completedLessons: {} // Map: { lessonKey: "YYYY-MM-DD" }
+                });
+                addStudentModal.style.display = 'none';
+                loadStudents(currentClassId); // Reload list
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi thêm học viên");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Lưu";
+            }
+        });
+    });
+
+    // Helper: Resize ảnh client-side
+    function resizeImageToDataURL(file, maxWidth, maxHeight, callback) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                } else {
+                    if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.8)); // Nén 80% quality
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
 });
