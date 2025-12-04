@@ -213,6 +213,43 @@
 </div>
 </div>
 
+<div id="edit-student-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h3>Sửa Thông Tin Học Viên</h3>
+        <form id="edit-student-form">
+            <input type="hidden" id="edit-student-id">
+            <div class="control-group">
+                <label>Tên học viên:</label>
+                <input type="text" id="edit-student-name" required>
+            </div>
+            <div class="control-group">
+                <label>Avatar Mới (Bỏ qua nếu không đổi):</label>
+                <input type="file" id="edit-student-avatar" accept="image/*">
+                <div class="avatar-preview">
+                    <img id="edit-avatar-preview-img" src="" alt="Preview">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">Lưu Thay Đổi</button>
+                <button type="button" id="btn-cancel-edit-student" class="btn-secondary">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="delete-student-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h3>🗑️ Xác nhận xóa</h3>
+        <p>Bạn có chắc chắn muốn xóa học viên <strong id="delete-student-name-display"></strong>?</p>
+        <p style="color: red; font-size: 0.9em;">Mọi dữ liệu điểm số và tiến độ của bé sẽ mất vĩnh viễn.</p>
+        <div class="modal-actions">
+            <button id="btn-confirm-delete-student" class="btn-danger">Xóa luôn</button>
+            <button id="btn-cancel-delete-student" class="btn-secondary">Giữ lại</button>
+        </div>
+    </div>
+</div>
+
+
     <div id="delete-confirm-modal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <h3>Xác nhận xóa</h3>
