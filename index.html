@@ -324,6 +324,23 @@
             </div>
         </div>
     </div>
+
+    <div id="report-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width: 600px; text-align: left;">
+        <h3 style="text-align: center; color: #007bff;">📢 Tạo Báo Cáo Buổi Học</h3>
+        
+        <div class="control-group">
+            <label>Nội dung báo cáo (Có thể chỉnh sửa trước khi copy):</label>
+            <textarea id="report-content" rows="12" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; font-size: 1em;"></textarea>
+        </div>
+
+        <div class="modal-actions">
+            <button id="btn-copy-report" class="btn-primary">📋 Sao chép</button>
+            <button id="btn-close-report" class="btn-secondary">Đóng</button>
+        </div>
+        <p id="copy-status" style="text-align: center; color: green; display: none; margin-top: 10px;">✅ Đã sao chép vào bộ nhớ đệm!</p>
+    </div>
+</div>
     
     <div class="footer-text">
         This website is created by Vũ Trần Lập Nhân, DO NOT REUSE WITHOUT ASKING FOR COPYRIGHT.
