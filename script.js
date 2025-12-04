@@ -1,8 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
-    /* =========================================
-       1. CONFIG & CONSTANTS
-       ========================================= */
+    // --- BƯỚC QUAN TRỌNG: DÁN FIREBASE CONFIG CỦA BẠN VÀO ĐÂY ---
     const firebaseConfig = {
         apiKey: "AIzaSyBlTjj_-WdZBpLqixox2rmt-kbHdPs8Kh8",
         authDomain: "quanlylophoc-5b945.firebaseapp.com",
@@ -12,60 +9,52 @@ document.addEventListener('DOMContentLoaded', () => {
         appId: "1:38123679904:web:abe3710093b5a09643d9c5"
     };
 
-    const CLASS_SCHEDULE_DAYS = { 
-        '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], 
-        '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] 
-    };
-    const REVIEW_OFFSETS_SMF = [1, 3, 6, 10];
-    const REVIEW_OFFSETS_KET = [1, 2, 4, 8, 16];
-    const VIETNAMESE_HOLIDAYS_FIXED = ['01-01', '04-30', '05-01', '09-02'];
+    // --- KHỞI TẠO FIREBASE ---
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // --- KHAI BÁO BIẾN GIAO DIỆN ---
+    const loginPage = document.getElementById('login-page');
+    const appContent = document.getElementById('app-content');
+    const userInfo = document.getElementById('user-info');
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const pages = document.querySelectorAll('#app-content .page');
+    const classForm = document.getElementById('class-form');
+    const formTitle = document.getElementById('form-title');
+    const classListContainer = document.getElementById('class-list-container');
+    const scheduleClassName = document.getElementById('schedule-class-name');
+    const scheduleHeader = document.getElementById('schedule-header');
+    const scheduleBody = document.getElementById('schedule-body');
+    const lookupDateInput = document.getElementById('lookup-date');
+    const lookupSummary = document.getElementById('lookup-summary');
+    const todaySummary = document.getElementById('today-summary');
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+    const btnCancelDelete = document.getElementById('btn-cancel-delete');
+    const classTypeInput = document.getElementById('class-type');
+    const startDateInput = document.getElementById('start-date');
+    const formErrorMessage = document.getElementById('form-error-message');
+    const csvGuideModal = document.getElementById('csv-guide-modal');
+    const showCsvGuideBtn = document.getElementById('show-csv-guide');
+    const closeCsvGuideBtn = document.getElementById('btn-close-guide');
+    const scheduleFileInput = document.getElementById('schedule-file');
+    const fileFeedback = document.getElementById('file-feedback');
+    const pencilMenuModal = document.getElementById('pencil-menu-modal');
+    const menuEditName = document.getElementById('menu-edit-name');
+    const menuPostponeSession = document.getElementById('menu-postpone-session');
+    const quizletLinkModal = document.getElementById('quizlet-link-modal');
+    const quizletLinkInput = document.getElementById('quizlet-link-input');
+    const quizletLinkFeedback = document.getElementById('quizlet-link-feedback');
+    const btnSaveQuizletLink = document.getElementById('btn-save-quizlet-link');
+    const btnCancelQuizletLink = document.getElementById('btn-cancel-quizlet-link');
+    const quizletMenuModal = document.getElementById('quizlet-menu-modal');
+    const menuOpenQuizlet = document.getElementById('menu-open-quizlet');
+    const menuAddEditQuizlet = document.getElementById('menu-add-edit-quizlet');
+    const btnUndo = document.getElementById('btn-undo');
     
-    const EXP_PER_LEVEL = 60;
-    const EXP_REWARD = 20;
-    const USER_TITLES = [
-        "Tập Sự", "Học Việc", "Lính Mới", "Thợ Lành Nghề", 
-        "Chuyên Gia", "Bậc Thầy", "Đại Kiện Tướng", "Thần Đồng", "Huyền Thoại"
-    ];
-    
-    // --- AVATAR MỚI (Style Adventurer) ---
-    const AVATAR_LIST = [
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Alexander",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Liam",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Josh",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Nolan",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Felix",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Christopher",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Sophia",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Kylie",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Jessica",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Mila",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Eliza",
-        "https://api.dicebear.com/9.x/adventurer/svg?seed=Bella"
-    ];
-
-    /* =========================================
-       1.5. LUNAR CALENDAR HELPER
-       ========================================= */
-    const TET_HOLIDAYS_MAP = {
-        2024: '2024-02-10', 2025: '2025-01-29', 2026: '2026-02-17',
-        2027: '2027-02-06', 2028: '2028-01-26', 2029: '2029-02-13',
-        2030: '2030-02-03', 2031: '2031-01-23', 2032: '2032-02-11',
-        2033: '2033-01-31', 2034: '2034-02-19', 2035: '2035-02-08'
-    };
-
-    const isTetHoliday = (dateObj) => {
-        const year = dateObj.getFullYear();
-        let tetDateStr = TET_HOLIDAYS_MAP[year];
-        if (!tetDateStr) return false;
-        let m1Tet = new Date(tetDateStr);
-        const diffTime = dateObj.getTime() - m1Tet.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        return diffDays >= -3 && diffDays <= 5;
-    };
-
-    /* =========================================
-       2. STATE MANAGEMENT
-       ========================================= */
+    // --- BIẾN TRẠNG THÁI ---
     let allClasses = [];
     let currentScheduleData = [];
     let currentUser = null;
@@ -73,101 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let deletingClassId = null;
     let currentClassId = null;
     let uploadedLessons = [];
+    let tempPostponedDates = [];
     let activeLessonCell = null;
     let activeLessonKey = null;
-    let isGuestMode = false;
-    let currentStudents = []; 
-    let currentStudentIndex = null;
-    let currentAttendanceDate = null; // Ngày đang điểm danh
+    let scheduleHistory = [];
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    // --- CẤU HÌNH LỊCH HỌC & NGÀY LỄ ---
+    const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
+    const REVIEW_OFFSETS_SMF = [1, 3, 6, 10];
+    const REVIEW_OFFSETS_KET = [1, 2, 4, 8, 16];
+    const VIETNAMESE_HOLIDAYS_FIXED = ['01-01', '04-30', '05-01', '09-02'];
+    const LUNAR_NEW_YEAR_DATES = [
+        '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01',
+        '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20',
+    ];
 
-    /* =========================================
-       3. DOM ELEMENTS
-       ========================================= */
-    const UI = {
-        loginPage: document.getElementById('login-page'),
-        appContent: document.getElementById('app-content'),
-        userInfo: document.getElementById('user-info'),
-        pages: document.querySelectorAll('#app-content .page'),
-        
-        btnGoogleLogin: document.getElementById('btn-google-login'),
-        btnGuestLogin: document.getElementById('btn-guest-login'),
-        btnLogout: document.getElementById('btn-logout'),
-        btnShowCreateForm: document.getElementById('btn-show-create-form'),
-        btnShowClassList: document.getElementById('btn-show-class-list'),
-        btnConfirmDelete: document.getElementById('btn-confirm-delete'),
-        btnCancelDelete: document.getElementById('btn-cancel-delete'),
-        btnUndo: document.getElementById('btn-undo'),
-        
-        classForm: document.getElementById('class-form'),
-        formTitle: document.getElementById('form-title'),
-        formErrorMessage: document.getElementById('form-error-message'),
-        classTypeInput: document.getElementById('class-type'),
-        startDateInput: document.getElementById('start-date'),
-        customDaysGroup: document.getElementById('custom-days-group'),
-        weekDayCheckboxes: document.querySelectorAll('input[name="week-day"]'),
-        fileInput: document.getElementById('schedule-file'),
-        fileFeedback: document.getElementById('file-feedback'),
-        
-        classListContainer: document.getElementById('class-list-container'),
-        scheduleClassName: document.getElementById('schedule-class-name'),
-        scheduleHeader: document.getElementById('schedule-header'),
-        scheduleBody: document.getElementById('schedule-body'),
-        todaySummary: document.getElementById('today-summary'),
-        lookupSummary: document.getElementById('lookup-summary'),
-        
-        deleteModal: document.getElementById('delete-confirm-modal'),
-        csvGuideModal: document.getElementById('csv-guide-modal'),
-        pencilMenu: document.getElementById('pencil-menu-modal'),
-        quizletMenu: document.getElementById('quizlet-menu-modal'),
-        quizletLinkModal: document.getElementById('quizlet-link-modal'),
-        quizletLinkInput: document.getElementById('quizlet-link-input'),
-        quizletLinkFeedback: document.getElementById('quizlet-link-feedback'),
-        btnSaveQuizlet: document.getElementById('btn-save-quizlet-link'),
-        btnCancelQuizlet: document.getElementById('btn-cancel-quizlet-link'),
-        menuOpenQuizlet: document.getElementById('menu-open-quizlet'),
-        menuAddEditQuizlet: document.getElementById('menu-add-edit-quizlet'),
-
-        managePage: document.getElementById('manage-class-page'),
-        studentGrid: document.getElementById('student-grid'),
-        btnAddStudent: document.getElementById('btn-add-student'),
-        btnMarkAllDone: document.getElementById('btn-mark-all-done'),
-        addStudentModal: document.getElementById('add-student-modal'),
-        newStudentName: document.getElementById('new-student-name'),
-        avatarSelector: document.getElementById('avatar-selector'),
-        selectedAvatarUrl: document.getElementById('selected-avatar-url'),
-        btnSaveStudent: document.getElementById('btn-save-student'),
-        btnCancelStudent: document.getElementById('btn-cancel-student'),
-
-        studentDetailModal: document.getElementById('student-detail-modal'),
-        detailAvatar: document.getElementById('detail-avatar'),
-        detailName: document.getElementById('detail-name'),
-        detailLevel: document.getElementById('detail-level'),
-        detailTitle: document.getElementById('detail-title'),
-        detailExp: document.getElementById('detail-exp'),
-        expBarFill: document.getElementById('exp-bar-fill'),
-        expToNext: document.getElementById('exp-to-next'),
-        studentReviewSchedule: document.getElementById('student-review-schedule'),
-        btnResetExp: document.getElementById('btn-reset-exp'),
-        btnDeleteStudent: document.getElementById('btn-delete-student'),
-
-        // New Modals
-        attendanceModal: document.getElementById('attendance-modal'),
-        attendanceTitle: document.getElementById('attendance-title'),
-        attendanceList: document.getElementById('attendance-list'),
-        btnSaveAttendance: document.getElementById('btn-save-attendance'),
-        homeworkModal: document.getElementById('homework-modal'),
-        homeworkContent: document.getElementById('homework-content'),
-        homeworkQuizlet: document.getElementById('homework-quizlet'),
-        btnCopyHomework: document.getElementById('btn-copy-homework')
-    };
-
-    /* =========================================
-       4. UTILITY FUNCTIONS
-       ========================================= */
+    // --- HÀM TRỢ GIÚP ---
     const formatDate = (date) => {
         if (!date) return '';
         const day = String(date.getDate()).padStart(2, '0');
@@ -175,115 +85,106 @@ document.addEventListener('DOMContentLoaded', () => {
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
     };
-    
     const stringToDate = (dateStr) => new Date(dateStr.split('/').reverse().join('-'));
-    
     const isHoliday = (date, extraHolidays = []) => {
         const formattedDate = formatDate(date);
         if (extraHolidays.includes(formattedDate)) return true;
+        const yyyymmdd = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const mmdd = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        if (LUNAR_NEW_YEAR_DATES.includes(yyyymmdd)) return true;
         if (VIETNAMESE_HOLIDAYS_FIXED.includes(mmdd)) return true;
-        if (isTetHoliday(date)) return true;
         return false;
     };
-
     const findNextWorkDay = (startDate, scheduleDays, extraHolidays = []) => {
         let nextDate = new Date(startDate.getTime());
         while (true) {
-            if (scheduleDays.includes(nextDate.getDay()) && !isHoliday(nextDate, extraHolidays)) break;
+            if (scheduleDays.includes(nextDate.getDay()) && !isHoliday(nextDate, extraHolidays)) {
+                break;
+            }
             nextDate.setDate(nextDate.getDate() + 1);
         }
         return nextDate;
     };
-
-    /* =========================================
-       5. DATA LOGIC & GAMIFICATION
-       ========================================= */
-    const getClassesRef = () => {
-        if (isGuestMode || !currentUser || !currentUser.uid) return null;
-        return db.collection('users').doc(currentUser.uid).collection('classes');
+    const isValidQuizletLink = (url) => {
+        if (!url) return false;
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname === 'quizlet.com';
+        } catch (e) {
+            return false;
+        }
     };
+    
+    // --- CÁC HÀM CHÍNH ---
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            loginPage.style.display = 'none';
+            appContent.style.display = 'flex';
+            userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
+            loadClassesFromFirestore().then(() => showPage('home-page'));
+        } else {
+            currentUser = null;
+            loginPage.style.display = 'block';
+            appContent.style.display = 'none';
+        }
+    });
 
-    const loadClasses = async () => {
-        if (isGuestMode) return;
+    const getClassesRef = () => db.collection('users').doc(currentUser.uid).collection('classes');
+
+    const loadClassesFromFirestore = async () => {
         if (!currentUser) return;
         try {
             const snapshot = await getClassesRef().orderBy("name").get();
             allClasses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) { console.error("Lỗi tải danh sách lớp:", error); }
     };
-
-    const getLevelInfo = (exp) => {
-        const level = Math.floor(exp / EXP_PER_LEVEL) + 1;
-        const titleIndex = Math.min(level - 1, USER_TITLES.length - 1);
-        return { level, title: USER_TITLES[titleIndex] };
-    };
-
-    const saveStudents = async (classId, students) => {
-        if (isGuestMode) {
-            const cls = allClasses.find(c => c.id === classId);
-            if (cls) cls.students = students;
-        } else {
-            await getClassesRef().doc(classId).update({ students });
-        }
-        currentStudents = students;
-        renderStudentGrid();
-    };
     
-    const saveAttendance = async (classId, attendanceData) => {
-         const cls = allClasses.find(c => c.id === classId);
-         if (!cls.attendanceLog) cls.attendanceLog = {};
-         Object.assign(cls.attendanceLog, attendanceData);
-         
-         if (isGuestMode) {
-             // Saved in memory
-         } else {
-             await getClassesRef().doc(classId).update({ attendanceLog: cls.attendanceLog });
-         }
-         // Refresh display
-         displaySchedule(currentScheduleData, cls.courseType, cls.quizletLinks, cls.attendanceLog);
-    };
+    const renderClassList = () => {
+        classListContainer.innerHTML = '';
+        if (allClasses.length === 0) {
+            classListContainer.innerHTML = '<p>Chưa có lớp nào được tạo. Hãy tạo lớp học đầu tiên của bạn!</p>';
+            return;
+        }
+        allClasses.forEach(cls => {
+            const classItem = document.createElement('div');
+            classItem.className = 'class-item';
+            let courseTypeName = cls.courseType === 'ket-pet' ? 'KET-PET' : 'Starters-Movers-Flyers';
+            const lessonCount = cls.uploadedLessons?.length > 0 ? cls.uploadedLessons.length : (cls.numUnits * cls.lessonsPerUnit);
+            const startDateString = cls.startDate || cls.uploadedLessons[0]?.date?.split('/').reverse().join('-') || new Date().toISOString().split('T')[0];
 
-    const calculateHomeReviews = (scheduleData, courseType) => {
-        const offsets = courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF;
-        const reviewTasks = {}; 
-        scheduleData.forEach(item => {
-            if (!item.isLesson) return;
-            const learnDate = stringToDate(item.lessonDate);
-            offsets.forEach((daysToAdd, idx) => {
-                const reviewDate = new Date(learnDate);
-                reviewDate.setDate(reviewDate.getDate() + daysToAdd);
-                const dateStr = formatDate(reviewDate);
-                if (!reviewTasks[dateStr]) reviewTasks[dateStr] = [];
-                reviewTasks[dateStr].push({
-                    taskId: `${item.lessonKey}_review_${idx + 1}`,
-                    lessonName: item.lessonName,
-                    type: `Ôn tập lần ${idx + 1}`
-                });
-            });
+            classItem.innerHTML = `
+                <div class="class-info" data-id="${cls.id}">
+                    <h3>${cls.name}</h3>
+                    <p><strong>Loại chương trình:</strong> ${courseTypeName}</p>
+                    <p><strong>Cấu trúc:</strong> ${lessonCount || 'N/A'} buổi học</p>
+                    <p><strong>Lịch học:</strong> ${cls.type || 'Theo file'}</p>
+                    <p><strong>Khai giảng:</strong> ${new Date(startDateString + 'T00:00:00').toLocaleDateString('vi-VN')}</p>
+                </div>
+                <div class="class-item-actions">
+                    <button class="edit-btn" data-id="${cls.id}">⚙️ Thiết lập</button>
+                    <button class="delete-btn" data-id="${cls.id}">🗑️ Xóa</button>
+                </div>
+            `;
+            classListContainer.appendChild(classItem);
         });
-        return reviewTasks;
     };
 
-    // --- Schedule Generation ---
-    const generateSchedule = (classData, extraHolidays = []) => {
-        const { startDate, type, numUnits, courseType, lessonsPerUnit, miniTestDates = [], customLessonNames = {}, uploadedLessons = [], customDays = [] } = classData;
-        let scheduleDays = (type === 'custom') ? customDays : CLASS_SCHEDULE_DAYS[type];
-        if (!scheduleDays || scheduleDays.length === 0) scheduleDays = [1, 3];
-
+    function generateSchedule(classData, extraHolidays = []) {
+        const { startDate, type, numUnits, courseType, lessonsPerUnit, miniTestDates = [], customLessonNames = {}, uploadedLessons = [] } = classData;
+        const scheduleDays = CLASS_SCHEDULE_DAYS[type];
         const offsets = courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF;
         let scheduleData = [];
-        let currentDate;
 
         if (uploadedLessons && uploadedLessons.length > 0) {
-            currentDate = stringToDate(uploadedLessons[0].date);
+            let currentDate = stringToDate(uploadedLessons[0].date);
             uploadedLessons.forEach((item, index) => {
                 const sessionDate = findNextWorkDay(currentDate, scheduleDays, extraHolidays);
                 const lessonKey = `lesson-${index}`;
                 scheduleData.push({
-                    isLesson: item.type === 'lesson',
+                    isLesson: item.type === 'lesson', 
                     isMiniTest: item.type === 'miniTest',
-                    lessonName: customLessonNames[lessonKey] || item.name,
+                    lessonName: customLessonNames[lessonKey] || item.name, 
                     lessonKey: lessonKey,
                     lessonDate: formatDate(sessionDate),
                 });
@@ -291,25 +192,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentDate.setDate(currentDate.getDate() + 1);
             });
         } else {
-            const totalLessons = parseInt(numUnits) * parseInt(lessonsPerUnit);
-            currentDate = new Date(startDate + 'T00:00:00');
+            const totalLessons = parseInt(numUnits, 10) * parseInt(lessonsPerUnit, 10);
+            let currentDate = new Date(startDate + 'T00:00:00');
             let lessonCounter = 0;
             let sessionCounter = 0;
-            while (lessonCounter < totalLessons) {
-                if (sessionCounter > totalLessons * 2) break;
+            
+            while(lessonCounter < totalLessons) {
+                if (sessionCounter > totalLessons * 2 && totalLessons > 0) break; 
+                
                 const sessionDate = findNextWorkDay(currentDate, scheduleDays, extraHolidays);
                 const formattedDate = formatDate(sessionDate);
+                
                 if (miniTestDates.includes(formattedDate)) {
                     scheduleData.push({ isMiniTest: true, lessonName: 'Mini Test', lessonDate: formattedDate });
                 } else {
                     const unitNumber = Math.floor(lessonCounter / lessonsPerUnit) + 1;
                     const lessonNumber = (lessonCounter % lessonsPerUnit) + 1;
                     const lessonKey = `${unitNumber}-${lessonNumber}`;
+                    const lessonName = `Unit ${unitNumber} lesson ${lessonNumber}`;
                     scheduleData.push({
-                        isLesson: true,
-                        lessonName: customLessonNames[lessonKey] || `Unit ${unitNumber} lesson ${lessonNumber}`,
-                        lessonKey: lessonKey,
-                        lessonDate: formattedDate,
+                        isLesson: true, lessonName: customLessonNames[lessonKey] || lessonName,
+                        lessonKey: lessonKey, lessonDate: formattedDate,
                     });
                     lessonCounter++;
                 }
@@ -318,649 +221,643 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionCounter++;
             }
         }
-
-        const findReviewDate = (startIndex) => {
-            let idx = startIndex;
-            while (scheduleData[idx] && scheduleData[idx].isMiniTest) idx++;
-            return scheduleData[idx]?.lessonDate || '';
+        
+        const findNextAvailableReviewDate = (startIndex) => {
+            let currentIndex = startIndex;
+            while (scheduleData[currentIndex] && scheduleData[currentIndex].isMiniTest) {
+                currentIndex++;
+            }
+            return scheduleData[currentIndex]?.lessonDate || '';
         };
 
         scheduleData.forEach((item, index) => {
             if (!item.isLesson) return;
-            item.review1 = findReviewDate(index + offsets[0]);
-            item.review2 = findReviewDate(index + offsets[1]);
-            item.review3 = findReviewDate(index + offsets[2]);
-            item.review4 = findReviewDate(index + offsets[3]);
-            if (courseType === 'ket-pet') item.review5 = findReviewDate(index + offsets[4]);
+            item.review1 = findNextAvailableReviewDate(index + offsets[0]);
+            item.review2 = findNextAvailableReviewDate(index + offsets[1]);
+            item.review3 = findNextAvailableReviewDate(index + offsets[2]);
+            item.review4 = findNextAvailableReviewDate(index + offsets[3]);
+            if (courseType === 'ket-pet') {
+                item.review5 = findNextAvailableReviewDate(index + offsets[4]);
+            }
         });
-
-        let maxDate = new Date(0);
+        
+        let latestDate = new Date(0);
         scheduleData.forEach(item => {
-             [item.lessonDate, item.review1, item.review2, item.review3, item.review4, item.review5].forEach(d => {
-                 if (d && stringToDate(d) > maxDate) maxDate = stringToDate(d);
-             });
+            const allItemDates = [item.lessonDate, item.review1, item.review2, item.review3, item.review4, item.review5].filter(Boolean);
+            allItemDates.forEach(dateStr => {
+                if (dateStr) {
+                    const currentDate = stringToDate(dateStr);
+                    if (currentDate > latestDate) {
+                        latestDate = currentDate;
+                    }
+                }
+            });
         });
-        const finalTestDate = findNextWorkDay(new Date(maxDate.setDate(maxDate.getDate() + 1)), scheduleDays, extraHolidays);
+        
+        const dayAfterLastEvent = new Date(latestDate.getTime());
+        dayAfterLastEvent.setDate(dayAfterLastEvent.getDate() + 1);
+        const finalTestDate = findNextWorkDay(dayAfterLastEvent, scheduleDays || CLASS_SCHEDULE_DAYS['2-4'], extraHolidays);
         scheduleData.push({ isFinalTest: true, lessonName: "Final Test", lessonDate: formatDate(finalTestDate) });
+        
         scheduleData.sort((a, b) => stringToDate(a.lessonDate) - stringToDate(b.lessonDate));
+        
         return scheduleData;
-    };
+    }
+    
+    function displaySchedule(scheduleData, courseType, quizletLinks = {}) {
+        scheduleHeader.innerHTML = '';
+        const headerRow = document.createElement('tr');
+        let headers = ['Buổi', 'Bài học', 'Ngày học', 'Ôn lần 1', 'Ôn lần 2', 'Ôn lần 3', 'Ôn lần 4'];
+        if (courseType === 'ket-pet') headers.push('Ôn lần 5');
+        headerRow.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+        scheduleHeader.appendChild(headerRow);
 
-    /* =========================================
-       6. UI RENDERING & EVENTS
-       ========================================= */
-    const showPage = (pageId) => {
-        UI.pages.forEach(p => p.style.display = 'none');
-        const target = document.getElementById(pageId);
-        if(target) target.style.display = 'block';
-    };
-
-    const renderClassList = () => {
-        UI.classListContainer.innerHTML = '';
-        if (allClasses.length === 0) {
-            UI.classListContainer.innerHTML = '<p>Chưa có lớp nào. Hãy tạo lớp học đầu tiên!</p>';
-            return;
-        }
-        allClasses.forEach(cls => {
-            const item = document.createElement('div');
-            item.className = 'class-item';
-            const typeName = cls.courseType === 'ket-pet' ? 'KET-PET' : 'Starters-Movers-Flyers';
-            const count = cls.uploadedLessons?.length || (cls.numUnits * cls.lessonsPerUnit);
-            const start = cls.startDate || (cls.uploadedLessons?.[0]?.date?.split('/').reverse().join('-')) || 'N/A'; 
-            item.innerHTML = `
-                <div class="class-info" data-id="${cls.id}">
-                    <h3>${cls.name}</h3>
-                    <p><strong>CT:</strong> ${typeName} | <strong>Số buổi:</strong> ${count}</p>
-                    <p><strong>Lịch:</strong> ${cls.type === 'custom' ? 'Tự chọn' : cls.type}</p>
-                    <p><strong>Khai giảng:</strong> ${new Date(start).toLocaleDateString('vi-VN')}</p>
-                </div>
-                <div class="class-item-actions">
-                    <button class="manage-btn" data-id="${cls.id}" style="background-color: #17a2b8; color: white; padding: 8px 12px; border-radius: 6px; margin-right: 5px;">👥 Quản lý</button>
-                    <button class="edit-btn" data-id="${cls.id}">⚙️ Sửa</button>
-                    <button class="delete-btn" data-id="${cls.id}">🗑️ Xóa</button>
-                </div>
-            `;
-            UI.classListContainer.appendChild(item);
-        });
-    };
-
-    const displaySchedule = (scheduleData, courseType, quizletLinks = {}, attendanceLog = {}) => {
-        UI.scheduleHeader.innerHTML = '';
-        const headers = ['Buổi', 'Bài học', 'Ngày học', 'Ôn 1', 'Ôn 2', 'Ôn 3', 'Ôn 4'];
-        if (courseType === 'ket-pet') headers.push('Ôn 5');
-        UI.scheduleHeader.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
-
-        UI.scheduleBody.innerHTML = '';
-        let sessionCount = 0;
-
+        scheduleBody.innerHTML = '';
+        let sessionCounter = 0;
         scheduleData.forEach(item => {
             const row = document.createElement('tr');
             if (item.isMiniTest) {
-                sessionCount++; row.className = 'mini-test-day';
-                row.innerHTML = `<td colspan="${headers.length}">(${sessionCount}) 📝 ${item.lessonName} - ${item.lessonDate}</td>`;
+                sessionCounter++;
+                row.classList.add('mini-test-day');
+                row.innerHTML = `<td colspan="${headers.length}">(${sessionCounter}) 📝 ${item.lessonName} - ${item.lessonDate}</td>`;
             } else if (item.isFinalTest) {
-                row.className = 'final-test-day';
+                row.classList.add('final-test-day');
                 row.innerHTML = `<td colspan="${headers.length}">🏆 ${item.lessonName} - ${item.lessonDate}</td>`;
-            } else {
-                sessionCount++;
-                const hasLink = quizletLinks && quizletLinks[item.lessonKey];
-                const isAttended = attendanceLog[item.lessonDate]; // Check if attendance taken
-                
-                let html = `
-                    <td>${sessionCount}</td>
+            } else { // isLesson
+                sessionCounter++;
+                const hasQuizletLink = quizletLinks && quizletLinks[item.lessonKey];
+                let rowHTML = `
+                    <td>${sessionCounter}</td>
                     <td class="lesson-name-cell">
-                        <span class="lesson-name-text" data-original-name="${item.lessonName}">${item.lessonName}</span>
+                        <span class="lesson-name-text" contenteditable="false" data-original-name="${item.lessonName}">${item.lessonName}</span>
                         <div class="lesson-actions" data-lesson-key="${item.lessonKey}">
-                            <button class="quizlet-btn ${hasLink ? 'active' : ''}">🗂️</button>
-                            <button class="edit-lesson-btn">✏️</button>
-                            <button class="confirm-lesson-btn hidden">✔️</button>
-                            <button class="cancel-lesson-btn hidden">❌</button>
+                            <button class="quizlet-btn ${hasQuizletLink ? 'active' : ''}"  title="Quản lý link Quizlet">🗂️</button>
+                            <button class="edit-lesson-btn" title="Quản lý buổi học">✏️</button>
+                            <button class="confirm-lesson-btn hidden" title="Xác nhận">✔️</button>
+                            <button class="cancel-lesson-btn hidden" title="Hủy">❌</button>
                         </div>
                     </td>
-                    <td>
-                        ${item.lessonDate}
-                        <button class="btn-attendance ${isAttended ? 'done' : ''}" data-date="${item.lessonDate}">
-                            ${isAttended ? '✔ Đã điểm danh' : '📝 Điểm danh'}
-                        </button>
-                    </td>
+                    <td>${item.lessonDate}</td>
                     <td>${item.review1 || ''}</td>
                     <td>${item.review2 || ''}</td>
                     <td>${item.review3 || ''}</td>
                     <td>${item.review4 || ''}</td>
                 `;
-                if (courseType === 'ket-pet') html += `<td>${item.review5 || ''}</td>`;
-                row.innerHTML = html;
-            }
-            UI.scheduleBody.appendChild(row);
-        });
-    };
-
-    const displaySummary = (scheduleData, targetDateStr = null) => {
-        const dateStr = targetDateStr || formatDate(new Date());
-        const lessons = [], reviews = [];
-        let msg = '';
-        for (const item of scheduleData) {
-            if (item.lessonDate === dateStr) {
-                if (item.isMiniTest) msg = '🔔 Hôm nay có Mini Test!';
-                else if (item.isFinalTest) msg = '🏆 Ngày thi Final Test!';
-                else if (item.isLesson) lessons.push(item.lessonName);
-            }
-            if (item.isLesson) {
-                if ([item.review1, item.review2, item.review3, item.review4, item.review5].includes(dateStr)) {
-                    reviews.push(item.lessonName);
+                if (courseType === 'ket-pet') {
+                    rowHTML += `<td>${item.review5 || ''}</td>`;
                 }
+                row.innerHTML = rowHTML;
             }
-        }
-        let html = targetDateStr ? '' : '<h2>🗓️ Lịch Hôm Nay</h2>';
-        if (msg) html += `<p>${msg}</p>`;
-        else if (lessons.length === 0 && reviews.length === 0) html += '<p class="no-class-message">Không có lịch học/ôn tập.</p>';
-        else {
-            if (lessons.length) html += `<strong>📚 Bài mới:</strong><ul>${lessons.map(l=>`<li>${l}</li>`).join('')}</ul>`;
-            if (reviews.length) html += `<strong>📝 Ôn tập:</strong><ul>${[...new Set(reviews)].map(r=>`<li>${r}</li>`).join('')}</ul>`;
-        }
-        if (targetDateStr) UI.lookupSummary.innerHTML = html;
-        else UI.todaySummary.innerHTML = html;
-    };
-
-    const renderStudentGrid = () => {
-        UI.studentGrid.innerHTML = '';
-        if (!currentStudents || currentStudents.length === 0) {
-            UI.studentGrid.innerHTML = '<p>Chưa có học viên nào.</p>';
-            return;
-        }
-        currentStudents.forEach((st, index) => {
-            const { level, title } = getLevelInfo(st.exp || 0);
-            const card = document.createElement('div');
-            card.className = 'class-item student-card';
-            card.innerHTML = `
-                <img src="${st.avatar}" class="student-avatar" alt="Avatar">
-                <h4 class="student-name">${st.name}</h4>
-                <div class="student-level">LV.${level} - ${title}</div>
-            `;
-            card.addEventListener('click', () => openStudentDetail(index));
-            UI.studentGrid.appendChild(card);
+            scheduleBody.appendChild(row);
         });
-    };
+    }
 
-    const openStudentDetail = (studentIndex) => {
-        currentStudentIndex = studentIndex; 
-        const student = currentStudents[studentIndex];
-        const cls = allClasses.find(c => c.id === currentClassId);
-        
-        const { level, title } = getLevelInfo(student.exp || 0);
-        UI.detailAvatar.src = student.avatar;
-        UI.detailName.textContent = student.name;
-        UI.detailLevel.textContent = level;
-        UI.detailTitle.textContent = title;
-        UI.detailExp.textContent = student.exp || 0;
-        
-        const expInCurrentLevel = (student.exp || 0) % EXP_PER_LEVEL;
-        const percent = (expInCurrentLevel / EXP_PER_LEVEL) * 100;
-        UI.expBarFill.style.width = `${percent}%`;
-        UI.expToNext.textContent = `Next: ${EXP_PER_LEVEL - expInCurrentLevel} XP`;
+    const displayTodaySummary = (scheduleData) => {
+        const todayString = formatDate(new Date());
+        const lessonsForToday = [];
+        const reviewsForToday = [];
+        let testMessage = '';
 
-        const schedule = generateSchedule(cls, cls.offDates || []);
-        const homeReviews = calculateHomeReviews(schedule, cls.courseType);
-        const sortedDates = Object.keys(homeReviews).sort((a, b) => stringToDate(a) - stringToDate(b));
-        
-        UI.studentReviewSchedule.innerHTML = '';
-        sortedDates.forEach(dateStr => {
-            const tasks = homeReviews[dateStr];
-            const dateGroup = document.createElement('div');
-            dateGroup.className = 'review-day-group';
-            dateGroup.innerHTML = `<div class="review-date-header">${dateStr}</div>`;
-            tasks.forEach(task => {
-    const isCompleted = student.completedTasks && student.completedTasks.includes(task.taskId);
-    
-    const taskEl = document.createElement('div');
-    taskEl.className = `review-task ${isCompleted ? 'completed' : ''}`;
-    taskEl.innerHTML = `
-        <div><strong>${task.lessonName}</strong> <small>(${task.type})</small></div>
-        <button class="btn-check-task">${isCompleted ? '✔' : ''}</button>
-    `;
-
-    // LOGIC MỚI: Xử lý cả Tick và Untick
-    const btnCheck = taskEl.querySelector('.btn-check-task');
-    btnCheck.addEventListener('click', async () => {
-        if (!student.completedTasks) student.completedTasks = [];
-
-        if (isCompleted) {
-            // TRƯỜNG HỢP HỦY (UNTICK): Trừ điểm và xóa task khỏi danh sách
-            if (confirm("Hủy hoàn thành bài này và thu hồi 20 EXP?")) {
-                student.exp = Math.max(0, (student.exp || 0) - EXP_REWARD); // Không trừ quá 0
-                student.completedTasks = student.completedTasks.filter(id => id !== task.taskId);
-            } else {
-                return; // Nếu chọn Cancel thì không làm gì cả
+        for (const item of scheduleData) {
+            if (item.lessonDate === todayString) {
+                if(item.isMiniTest) testMessage = '🔔 Hôm nay có Mini Test nhé!';
+                if(item.isFinalTest) testMessage = '🏆 Chúc các bạn thi tốt trong ngày Final Test!';
+                if(item.isLesson) lessonsForToday.push(item.lessonName);
             }
+            if(item.isLesson) {
+                if (item.review1 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 1)`);
+                if (item.review2 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 2)`);
+                if (item.review3 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 3)`);
+                if (item.review4 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 4)`);
+                if (item.review5 === todayString) reviewsForToday.push(`"${item.lessonName}" (ôn lần 5)`);
+            }
+        }
+        
+        let summaryHTML = '<h2>🗓️ Lịch Hôm Nay</h2>';
+        if (testMessage) {
+             summaryHTML += `<p class="no-class-message">${testMessage}</p>`;
+        } else if (lessonsForToday.length === 0 && reviewsForToday.length === 0) {
+            summaryHTML += '<p class="no-class-message">Hôm nay lớp mình chưa tới ngày học nè 🎉</p>';
         } else {
-            // TRƯỜNG HỢP TICK: Cộng điểm (như cũ)
-            student.exp = (student.exp || 0) + EXP_REWARD;
-            student.completedTasks.push(task.taskId);
+            if (lessonsForToday.length > 0) {
+                 summaryHTML += `<strong>📚 Bài học mới:</strong><ul>${lessonsForToday.map(l => `<li>${l}</li>`).join('')}</ul>`;
+            }
+            if (reviewsForToday.length > 0) {
+                 summaryHTML += `<strong>📝 Nội dung ôn tập:</strong><ul>${[...new Set(reviewsForToday)].map(r => `<li>${r}</li>`).join('')}</ul>`;
+            }
+        }
+        todaySummary.innerHTML = summaryHTML;
+    };
+    
+    function showSummaryForDate(dateStr) {
+        const lessonsForDay = [];
+        const reviewsForDay = [];
+        let testMessage = '';
+
+        for (const item of currentScheduleData) {
+            if (item.lessonDate === dateStr) {
+                if (item.isMiniTest) testMessage = '🔔 Đây là ngày Mini Test của lớp.';
+                if (item.isFinalTest) testMessage = '🏆 Đây là ngày Final Test của lớp.';
+                if (item.isLesson) lessonsForDay.push(item.lessonName);
+            }
+            if(item.isLesson) {
+                if (item.review1 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 1)`);
+                if (item.review2 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 2)`);
+                if (item.review3 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 3)`);
+                if (item.review4 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 4)`);
+                if (item.review5 === dateStr) reviewsForDay.push(`"${item.lessonName}" (ôn lần 5)`);
+            }
         }
 
-        // Lưu và tải lại popup
-        await saveStudents(currentClassId, currentStudents);
-        openStudentDetail(studentIndex); 
-    });
-
-    dateGroup.appendChild(taskEl);
-});
-            UI.studentReviewSchedule.appendChild(dateGroup);
-        });
-        UI.studentDetailModal.style.display = 'flex';
+        let summaryHTML = '';
+        if (testMessage) {
+            summaryHTML = `<p>${testMessage}</p>`;
+        } else if (lessonsForDay.length === 0 && reviewsForDay.length === 0) {
+            summaryHTML = '<p>🎉 Không có lịch học hay ôn tập vào ngày này.</p>';
+        } else {
+            if (lessonsForDay.length > 0) summaryHTML += `<strong>📚 Bài học mới:</strong><ul>${lessonsForDay.map(l => `<li>${l}</li>`).join('')}</ul>`;
+            if (reviewsForDay.length > 0) summaryHTML += `<strong>📝 Nội dung ôn tập:</strong><ul>${[...new Set(reviewsForDay)].map(r => `<li>${r}</li>`).join('')}</ul>`;
+        }
+        lookupSummary.innerHTML = summaryHTML;
+    }
+    
+    const validateStartDate = () => {
+        const selectedDaysKey = classTypeInput.value;
+        const startDateValue = startDateInput.value;
+        if (!startDateValue) { formErrorMessage.textContent = ''; return; }
+        const allowedDays = CLASS_SCHEDULE_DAYS[selectedDaysKey];
+        const selectedDate = new Date(startDateValue + 'T00:00:00');
+        if (!allowedDays.includes(selectedDate.getDay())) {
+            formErrorMessage.textContent = 'Ngày khai giảng không khớp với mô hình lớp học.';
+        } else {
+            formErrorMessage.textContent = '';
+        }
     };
 
-    // --- MAIN EVENT LISTENERS ---
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            isGuestMode = false; currentUser = user;
-            UI.loginPage.style.display = 'none';
-            UI.appContent.style.display = 'flex';
-            UI.userInfo.innerHTML = `Xin chào, <strong>${user.displayName}</strong>!`;
-            loadClasses().then(() => showPage('home-page'));
-        } else if (!isGuestMode) {
-            UI.loginPage.style.display = 'block';
-            UI.appContent.style.display = 'none';
-        }
-    });
+    const showPage = (pageId) => pages.forEach(p => p.style.display = p.id === pageId ? 'block' : 'none');
+    const showDeleteModal = () => deleteModal.style.display = 'flex';
+    const hideDeleteModal = () => deleteModal.style.display = 'none';
 
-    UI.btnGoogleLogin.addEventListener('click', () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()));
-    UI.btnLogout.addEventListener('click', () => {
-        if(isGuestMode) { isGuestMode = false; allClasses = []; location.reload(); } 
-        else auth.signOut();
+    // --- SỰ KIỆN ---
+    btnGoogleLogin.addEventListener('click', () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => console.error("Lỗi đăng nhập Google:", error));
     });
-    UI.btnGuestLogin.addEventListener('click', () => {
-        if(confirm("Chế độ Khách: Dữ liệu sẽ mất khi tải lại trang. Tiếp tục?")) {
-            isGuestMode = true; currentUser = { displayName: 'Khách' };
-            UI.loginPage.style.display = 'none';
-            UI.appContent.style.display = 'flex';
-            UI.userInfo.innerHTML = `Xin chào, <strong>Khách</strong>!`;
-            allClasses = []; renderClassList(); showPage('home-page');
-        }
-    });
+    btnLogout.addEventListener('click', () => auth.signOut());
 
-    // Navigation
-    UI.btnShowCreateForm.addEventListener('click', () => {
-        editingClassId = null; UI.formTitle.textContent = '➕ Tạo Lớp Học Mới';
-        UI.classForm.reset(); uploadedLessons = [];
-        UI.startDateInput.valueAsDate = new Date();
-        UI.fileFeedback.textContent = 'Chưa có file.';
+    document.getElementById('btn-show-create-form').addEventListener('click', () => {
+        editingClassId = null;
+        formTitle.textContent = '➕ Tạo Lớp Học Mới';
+        classForm.reset();
+        document.getElementById('start-date').valueAsDate = new Date();
+        formErrorMessage.textContent = '';
+        fileFeedback.textContent = 'Chưa có file nào được chọn.';
+        uploadedLessons = [];
+        const manualInputs = [startDateInput, classTypeInput, document.getElementById('num-units'), document.getElementById('lessons-per-unit'), document.getElementById('mini-test-dates')];
+        manualInputs.forEach(input => input.disabled = false);
         showPage('form-page');
     });
-    UI.btnShowClassList.addEventListener('click', async () => { await loadClasses(); renderClassList(); showPage('class-list-page'); });
-    document.querySelectorAll('.back-link').forEach(l => l.addEventListener('click', (e) => {
-        e.preventDefault(); showPage(e.target.dataset.target);
-    }));
 
-    // CSV Logic
-    UI.fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    document.getElementById('btn-show-class-list').addEventListener('click', async () => {
+        await loadClassesFromFirestore();
+        renderClassList();
+        showPage('class-list-page');
+    });
+
+    document.querySelectorAll('.back-link').forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const targetPage = e.target.dataset.target;
+            if (targetPage === 'class-list-page') {
+                await loadClassesFromFirestore();
+                renderClassList();
+            }
+            showPage(targetPage);
+        });
+    });
+    
+    classForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (formErrorMessage.textContent && !formErrorMessage.textContent.startsWith('⚠️')) {
+             return;
+        }
+        
+        const isFileUploaded = uploadedLessons.length > 0;
+        const miniTestDatesRaw = document.getElementById('mini-test-dates').value;
+
+        const parseAndFormatDates = (datesRaw) => {
+            if (!datesRaw) return [];
+            return datesRaw.split(',').map(d => {
+                const trimmedDate = d.trim();
+                if (!trimmedDate) return null;
+                const parts = trimmedDate.split('/');
+                if (parts.length !== 3) return null;
+                return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+            }).filter(Boolean);
+        };
+
+        let classData = {
+            name: document.getElementById('class-name').value,
+            courseType: document.getElementById('course-type').value,
+            type: document.getElementById('class-type').value,
+            uploadedLessons: uploadedLessons,
+            numUnits: isFileUploaded ? 0 : document.getElementById('num-units').value,
+            lessonsPerUnit: isFileUploaded ? 0 : document.getElementById('lessons-per-unit').value,
+            startDate: isFileUploaded ? '' : document.getElementById('start-date').value,
+            miniTestDates: isFileUploaded ? [] : parseAndFormatDates(miniTestDatesRaw),
+        };
+
+        try {
+            if (editingClassId) {
+                const existingClass = allClasses.find(c => c.id === editingClassId);
+                classData.customLessonNames = existingClass.customLessonNames || {};
+                classData.quizletLinks = existingClass.quizletLinks || {};
+                await getClassesRef().doc(editingClassId).update(classData);
+            } else {
+                classData.customLessonNames = {};
+                classData.quizletLinks = {};
+                await getClassesRef().add(classData);
+            }
+        } catch (error) { console.error("Lỗi lưu lớp:", error); }
+        
+        await loadClassesFromFirestore();
+        renderClassList();
+        showPage('class-list-page');
+    });
+
+    classListContainer.addEventListener('click', (e) => {
+        const classInfo = e.target.closest('.class-info');
+        const editBtn = e.target.closest('.edit-btn');
+        const deleteBtn = e.target.closest('.delete-btn');
+
+        if (deleteBtn) {
+            deletingClassId = deleteBtn.dataset.id;
+            showDeleteModal();
+        } else if (editBtn) {
+            const classId = editBtn.dataset.id;
+            const selectedClass = allClasses.find(cls => cls.id === classId);
+            if(selectedClass){
+                editingClassId = classId;
+                formTitle.textContent = '⚙️ Thiết Lập Thông Tin Lớp Học';
+                classForm.reset();
+                formErrorMessage.textContent = '';
+                fileFeedback.textContent = 'Chưa có file nào được chọn.';
+                
+                document.getElementById('class-name').value = selectedClass.name;
+                document.getElementById('course-type').value = selectedClass.courseType;
+                document.getElementById('class-type').value = selectedClass.type;
+
+                const isFileUploaded = selectedClass.uploadedLessons?.length > 0;
+                
+                const manualInputs = [document.getElementById('num-units'), document.getElementById('lessons-per-unit'), startDateInput, document.getElementById('mini-test-dates')];
+                
+                if(isFileUploaded){
+                    fileFeedback.textContent = `Lớp này đang dùng ${selectedClass.uploadedLessons.length} bài học từ file. Chọn file mới để thay thế.`;
+                    uploadedLessons = selectedClass.uploadedLessons || [];
+                    manualInputs.forEach(input => input.disabled = true);
+                } else {
+                    document.getElementById('num-units').value = selectedClass.numUnits;
+                    document.getElementById('lessons-per-unit').value = selectedClass.lessonsPerUnit;
+                    document.getElementById('start-date').value = selectedClass.startDate;
+                    document.getElementById('mini-test-dates').value = selectedClass.miniTestDates ? selectedClass.miniTestDates.join(', ') : '';
+                    manualInputs.forEach(input => input.disabled = false);
+                }
+                
+                showPage('form-page');
+            }
+        } else if (classInfo) {
+            const classId = classInfo.dataset.id;
+            currentClassId = classId;
+            tempPostponedDates = [];
+            scheduleHistory = [];
+            btnUndo.classList.add('hidden');
+            const selectedClass = allClasses.find(cls => cls.id === classId);
+            if (selectedClass) {
+                scheduleClassName.textContent = `🗓️ Lịch Học Chi Tiết - Lớp ${selectedClass.name}`;
+                currentScheduleData = generateSchedule(selectedClass);
+                displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
+                displayTodaySummary(currentScheduleData);
+                lookupDateInput.value = '';
+                lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
+                showPage('schedule-details-page');
+            }
+        }
+    });
+
+    scheduleBody.addEventListener('click', async (e) => {
+    const target = e.target;
+    const button = target.closest('button');
+    if (!button) return;
+
+    // Lấy thẻ div cha và lessonKey ngay từ đầu
+    const actionsDiv = button.closest('.lesson-actions');
+    if (!actionsDiv) return; // Bỏ qua nếu nút không nằm trong actions
+    const lessonKey = actionsDiv.dataset.lessonKey;
+
+    if (button.matches('.confirm-lesson-btn') || button.matches('.cancel-lesson-btn')) {
+        const lessonCell = actionsDiv.closest('.lesson-name-cell');
+        const lessonTextSpan = lessonCell.querySelector('.lesson-name-text');
+        const editBtn = actionsDiv.querySelector('.edit-lesson-btn');
+        const confirmBtn = actionsDiv.querySelector('.confirm-lesson-btn');
+        const cancelBtn = actionsDiv.querySelector('.cancel-lesson-btn');
+
+        lessonTextSpan.setAttribute('contenteditable', 'false');
+        editBtn.classList.remove('hidden');
+        confirmBtn.classList.add('hidden');
+        cancelBtn.classList.add('hidden');
+
+        if (button.matches('.confirm-lesson-btn')) {
+            const newName = lessonTextSpan.textContent.trim();
+            
+            // Bây giờ `lessonKey` đã hợp lệ!
+            if (currentClassId && lessonKey && newName && newName !== lessonTextSpan.dataset.originalName) {
+                const classRef = getClassesRef().doc(currentClassId);
+                try {
+                    await classRef.update({ [`customLessonNames.${lessonKey}`]: newName });
+                    const localClass = allClasses.find(c => c.id === currentClassId);
+                    if (!localClass.customLessonNames) localClass.customLessonNames = {};
+                    localClass.customLessonNames[lessonKey] = newName;
+                    const localScheduleItem = currentScheduleData.find(item => item.lessonKey === lessonKey);
+                    if (localScheduleItem) localScheduleItem.lessonName = newName;
+
+                    displayTodaySummary(currentScheduleData);
+                    if (lookupDateInput.value) {
+                       showSummaryForDate(formatDate(new Date(lookupDateInput.value + 'T00:00:00')));
+                    }
+                    lessonTextSpan.dataset.originalName = newName;
+                } catch (error) {
+                    console.error("Lỗi cập nhật tên bài học:", error);
+                    lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+                }
+            } else {
+                 lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+            }
+        } else { 
+            lessonTextSpan.textContent = lessonTextSpan.dataset.originalName;
+        }
+    } else if (button.matches('.edit-lesson-btn')) {
+        activeLessonCell = button.closest('.lesson-name-cell');
+        pencilMenuModal.style.top = `${e.clientY + 5}px`;
+        pencilMenuModal.style.left = `${e.clientX - 100}px`;
+        pencilMenuModal.style.display = 'block';
+        quizletMenuModal.style.display = 'none';
+    } 
+    else if (button.matches('.quizlet-btn')) {
+        activeLessonKey = lessonKey; // Sử dụng lessonKey đã lấy ở trên
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        const hasLink = selectedClass && selectedClass.quizletLinks && selectedClass.quizletLinks[activeLessonKey];
+        
+        menuOpenQuizlet.style.display = hasLink ? 'block' : 'none';
+        menuAddEditQuizlet.textContent = hasLink ? '✏️ Sửa/Xóa Link Quizlet' : '➕ Thêm Link Quizlet';
+
+        quizletMenuModal.style.top = `${e.clientY + 5}px`;
+        quizletMenuModal.style.left = `${e.clientX - 100}px`;
+        quizletMenuModal.style.display = 'block';
+        pencilMenuModal.style.display = 'none';
+    }
+});
+    
+    menuEditName.addEventListener('click', () => {
+        pencilMenuModal.style.display = 'none';
+        if (!activeLessonCell) return;
+        
+        const lessonTextSpan = activeLessonCell.querySelector('.lesson-name-text');
+        const actionsDiv = activeLessonCell.querySelector('.lesson-actions');
+        const editBtn = actionsDiv.querySelector('.edit-lesson-btn');
+        const confirmBtn = actionsDiv.querySelector('.confirm-lesson-btn');
+        const cancelBtn = actionsDiv.querySelector('.cancel-lesson-btn');
+
+        lessonTextSpan.setAttribute('contenteditable', 'true');
+        lessonTextSpan.focus();
+        document.execCommand('selectAll', false, null);
+        editBtn.classList.add('hidden');
+        confirmBtn.classList.remove('hidden');
+        cancelBtn.classList.remove('hidden');
+    });
+
+    menuPostponeSession.addEventListener('click', () => {
+        pencilMenuModal.style.display = 'none';
+        if (!activeLessonCell) return;
+        
+        scheduleHistory.push(JSON.parse(JSON.stringify(currentScheduleData)));
+
+        const row = activeLessonCell.parentElement;
+        const lessonDateStr = row.cells[2]?.textContent || 
+                              row.cells[0].textContent.match(/(\d{1,2}\/\d{1,2}\/\d{4})/)[0];
+        
+        if (lessonDateStr && !tempPostponedDates.includes(lessonDateStr)) {
+            tempPostponedDates.push(lessonDateStr);
+        }
+
+        const selectedClass = allClasses.find(cls => cls.id === currentClassId);
+        if (selectedClass) {
+            currentScheduleData = generateSchedule(selectedClass, tempPostponedDates);
+            displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
+            displayTodaySummary(currentScheduleData);
+            btnUndo.classList.remove('hidden');
+        }
+    });
+
+    menuOpenQuizlet.addEventListener('click', () => {
+        quizletMenuModal.style.display = 'none';
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        const url = selectedClass.quizletLinks[activeLessonKey];
+        if (url) {
+            window.open(url, '_blank');
+        }
+    });
+
+    menuAddEditQuizlet.addEventListener('click', () => {
+        quizletMenuModal.style.display = 'none';
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+        const currentLink = selectedClass.quizletLinks?.[activeLessonKey] || '';
+        quizletLinkInput.value = currentLink;
+        quizletLinkInput.dispatchEvent(new Event('input'));
+        quizletLinkModal.style.display = 'flex';
+    });
+
+    btnUndo.addEventListener('click', () => {
+        if (scheduleHistory.length > 0) {
+            currentScheduleData = scheduleHistory.pop();
+            tempPostponedDates.pop();
+            
+            const selectedClass = allClasses.find(cls => cls.id === currentClassId);
+            displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
+            displayTodaySummary(currentScheduleData);
+            
+            if (scheduleHistory.length === 0) {
+                btnUndo.classList.add('hidden');
+            }
+        }
+    });
+
+    quizletLinkInput.addEventListener('input', () => {
+        const link = quizletLinkInput.value.trim();
+        if (link === '') {
+            quizletLinkFeedback.textContent = 'Để trống và Lưu để xóa link.';
+            quizletLinkFeedback.className = '';
+            btnSaveQuizletLink.disabled = false;
+        } else if (isValidQuizletLink(link)) {
+            quizletLinkFeedback.textContent = '✅ Link hợp lệ.';
+            quizletLinkFeedback.className = 'valid';
+            btnSaveQuizletLink.disabled = false;
+        } else {
+            quizletLinkFeedback.textContent = '❌ Link phải bắt đầu bằng https://quizlet.com/';
+            quizletLinkFeedback.className = 'invalid';
+            btnSaveQuizletLink.disabled = true;
+        }
+    });
+
+    btnCancelQuizletLink.addEventListener('click', () => {
+        quizletLinkModal.style.display = 'none';
+    });
+
+    btnSaveQuizletLink.addEventListener('click', async () => {
+        const newLink = quizletLinkInput.value.trim();
+        const classRef = getClassesRef().doc(currentClassId);
+        const selectedClass = allClasses.find(c => c.id === currentClassId);
+
+        try {
+            if (newLink === '') {
+                await classRef.update({ [`quizletLinks.${activeLessonKey}`]: firebase.firestore.FieldValue.delete() });
+                if (selectedClass.quizletLinks) {
+                    delete selectedClass.quizletLinks[activeLessonKey];
+                }
+            } else {
+                await classRef.update({ [`quizletLinks.${activeLessonKey}`]: newLink });
+                if (!selectedClass.quizletLinks) selectedClass.quizletLinks = {};
+                selectedClass.quizletLinks[activeLessonKey] = newLink;
+            }
+            displaySchedule(currentScheduleData, selectedClass.courseType, selectedClass.quizletLinks);
+        } catch (error) {
+            console.error("Lỗi cập nhật link Quizlet:", error);
+            alert('Đã có lỗi xảy ra, không thể lưu link.');
+        }
+        
+        quizletLinkModal.style.display = 'none';
+    });
+
+    document.addEventListener('click', (e) => {
+        if (pencilMenuModal && !pencilMenuModal.contains(e.target) && !e.target.matches('.edit-lesson-btn')) {
+            pencilMenuModal.style.display = 'none';
+        }
+        if (quizletMenuModal && !quizletMenuModal.contains(e.target) && !e.target.matches('.quizlet-btn')) {
+            quizletMenuModal.style.display = 'none';
+        }
+    });
+
+    lookupDateInput.addEventListener('change', () => {
+        if (!lookupDateInput.value) {
+            lookupSummary.innerHTML = '<p>Chọn một ngày để xem tóm tắt.</p>';
+            return;
+        }
+        const selectedDate = new Date(lookupDateInput.value + 'T00:00:00');
+        showSummaryForDate(formatDate(selectedDate));
+    });
+
+    btnConfirmDelete.addEventListener('click', async () => {
+        if (!deletingClassId) return;
+        try {
+            await getClassesRef().doc(deletingClassId).delete();
+        } catch (error) { console.error("Lỗi xóa lớp:", error); }
+        await loadClassesFromFirestore();
+        renderClassList();
+        hideDeleteModal();
+    });
+
+    btnCancelDelete.addEventListener('click', hideDeleteModal);
+
+    classTypeInput.addEventListener('change', validateStartDate);
+    startDateInput.addEventListener('change', validateStartDate);
+
+    showCsvGuideBtn.addEventListener('click', () => {
+        csvGuideModal.style.display = 'flex';
+    });
+    closeCsvGuideBtn.addEventListener('click', () => {
+        csvGuideModal.style.display = 'none';
+    });
+    csvGuideModal.addEventListener('click', (e) => {
+        if (e.target === csvGuideModal) {
+            csvGuideModal.style.display = 'none';
+        }
+    });
+    
+    scheduleFileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        formErrorMessage.innerHTML = '';
+        fileFeedback.textContent = 'Chưa có file nào được chọn.';
+        uploadedLessons = []; 
+        const manualInputs = [startDateInput, document.getElementById('num-units'), document.getElementById('lessons-per-unit'), document.getElementById('mini-test-dates')];
+
+        if (!file) {
+            manualInputs.forEach(input => input.disabled = false);
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
-            let text = e.target.result;
-            if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-            const lines = text.split(/\r\n|\n/).filter(l => l.trim());
-            if (lines.length < 2) { UI.fileFeedback.textContent = '❌ File lỗi.'; return; }
-            const delimiter = lines[0].includes(';') ? ';' : ',';
+            const text = e.target.result;
             try {
-                uploadedLessons = lines.slice(1).map(line => {
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 2) throw new Error("File CSV cần ít nhất 2 dòng (tiêu đề và dữ liệu).");
+
+                const delimiter = lines[0].includes(';') ? ';' : ',';
+                const header = lines[0].toLowerCase().split(delimiter).map(h => h.trim().replace(/"/g, ''));
+                const lessonCol = header.findIndex(h => h.includes('bài học') || h.includes('bai hoc'));
+                const dateCol = header.findIndex(h => h.includes('ngày học') || h.includes('ngay hoc'));
+
+                if (lessonCol === -1 || dateCol === -1) {
+                    throw new Error("File phải có cột 'Bài học' và 'Ngày học'.");
+                }
+
+                const dataLines = lines.slice(1);
+                const parsedLessons = dataLines.map(line => {
                     const parts = line.split(delimiter);
-                    if (parts.length < 2) return null;
-                    const dateStr = parts[1].trim().replace(/^"|"$/g, '');
-                    if (!dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return null;
-                    return { name: parts[0].trim().replace(/^"|"$/g, ''), date: dateStr, type: 'lesson' };
+                    const name = (parts[lessonCol] || '').trim().replace(/"/g, '');
+                    const dateRaw = (parts[dateCol] || '').trim().replace(/"/g, '');
+                    if (!name || !dateRaw || !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateRaw)) return null;
+                    
+                    const dateParts = dateRaw.split('/');
+                    const date = `${dateParts[0].padStart(2, '0')}/${dateParts[1].padStart(2, '0')}/${dateParts[2]}`;
+
+                    const lowerCaseName = name.toLowerCase();
+                    let type = 'lesson';
+                    if (lowerCaseName.includes('mini test') || lowerCaseName.includes('project')) {
+                        type = 'miniTest';
+                    }
+                    return { name, date, type };
                 }).filter(Boolean);
-                UI.fileFeedback.textContent = `✅ Đã nhận ${uploadedLessons.length} bài.`;
-                const days = [...new Set(uploadedLessons.map(l => stringToDate(l.date).getDay()))].sort();
-                let detected = Object.keys(CLASS_SCHEDULE_DAYS).find(k => JSON.stringify(CLASS_SCHEDULE_DAYS[k].sort()) === JSON.stringify(days));
-                if (detected) { UI.classTypeInput.value = detected; UI.customDaysGroup.classList.add('hidden'); }
-                else { UI.classTypeInput.value = 'custom'; UI.customDaysGroup.classList.remove('hidden'); }
-            } catch (err) { UI.fileFeedback.textContent = '❌ Lỗi đọc file.'; }
+
+                if (parsedLessons.length === 0) throw new Error('Không tìm thấy dữ liệu hợp lệ.');
+                
+                uploadedLessons = parsedLessons;
+                fileFeedback.textContent = `✅ Đã chọn file: ${file.name} (${uploadedLessons.length} buổi học).`;
+                fileFeedback.style.color = 'green';
+                manualInputs.forEach(input => input.disabled = true);
+                
+                const isKetPet = uploadedLessons.some(item => item.name.toUpperCase().includes('KET') || item.name.toUpperCase().includes('PET'));
+                document.getElementById('course-type').value = isKetPet ? 'ket-pet' : 'starters-movers-flyers';
+
+                const uniqueDays = [...new Set(parsedLessons.map(lesson => stringToDate(lesson.date).getDay()))].sort();
+                let detectedType = '';
+                for (const [key, value] of Object.entries(CLASS_SCHEDULE_DAYS)) {
+                    if (JSON.stringify(value.sort()) === JSON.stringify(uniqueDays)) {
+                        detectedType = key;
+                        break;
+                    }
+                }
+                if (detectedType) {
+                    classTypeInput.value = detectedType;
+                }
+
+            } catch (error) {
+                formErrorMessage.textContent = `❌ ${error.message}`; 
+                fileFeedback.textContent = 'Chưa có file nào được chọn.';
+                fileFeedback.style.color = '#dc3545';
+                uploadedLessons = [];
+                manualInputs.forEach(input => input.disabled = false);
+            }
         };
         reader.readAsText(file);
     });
-
-    UI.classTypeInput.addEventListener('change', () => {
-        UI.customDaysGroup.classList.toggle('hidden', UI.classTypeInput.value !== 'custom');
-    });
-
-    UI.classForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        let customDays = [];
-        if (UI.classTypeInput.value === 'custom') {
-            UI.weekDayCheckboxes.forEach(cb => { if (cb.checked) customDays.push(parseInt(cb.value)); });
-        }
-        const data = {
-            name: document.getElementById('class-name').value,
-            courseType: document.getElementById('course-type').value,
-            type: UI.classTypeInput.value,
-            customDays: customDays,
-            uploadedLessons: uploadedLessons,
-            numUnits: document.getElementById('num-units').value,
-            lessonsPerUnit: document.getElementById('lessons-per-unit').value,
-            startDate: UI.startDateInput.value,
-            miniTestDates: document.getElementById('mini-test-dates').value.split(',').map(d=>d.trim()).filter(Boolean),
-            customLessonNames: {}, quizletLinks: {}, attendanceLog: {}
-        };
-        if (isGuestMode) {
-            if (editingClassId) {
-                const idx = allClasses.findIndex(c => c.id === editingClassId);
-                if (idx > -1) allClasses[idx] = { ...allClasses[idx], ...data };
-            } else { data.id = `guest_${Date.now()}`; allClasses.push(data); }
-        } else {
-            const ref = getClassesRef();
-            editingClassId ? await ref.doc(editingClassId).update(data) : await ref.add(data);
-        }
-        await loadClasses(); renderClassList(); showPage('class-list-page');
-    });
-
-    // LIST ACTIONS (Manage, Edit, Delete)
-    UI.classListContainer.addEventListener('click', (e) => {
-        const clsId = e.target.dataset.id || e.target.closest('.class-info')?.dataset.id;
-        if (!clsId) return;
-
-        if (e.target.matches('.manage-btn')) {
-            currentClassId = clsId;
-            const cls = allClasses.find(c => c.id === clsId);
-            currentStudents = cls.students || [];
-            document.getElementById('manage-class-title').textContent = `Quản Lý: ${cls.name}`;
-            renderStudentGrid();
-            document.getElementById('manage-class-modal').style.display = 'flex';
-        
-        } else if (e.target.closest('.edit-btn')) {
-            editingClassId = clsId;
-            const cls = allClasses.find(c => c.id === clsId);
-            UI.classTypeInput.value = cls.type;
-            if (cls.type === 'custom') UI.customDaysGroup.classList.remove('hidden');
-            showPage('form-page');
-        } else if (e.target.closest('.delete-btn')) {
-            deletingClassId = clsId; UI.deleteModal.style.display = 'flex';
-        } else if (e.target.closest('.class-info')) {
-            currentClassId = clsId;
-            const cls = allClasses.find(c => c.id === clsId);
-            UI.scheduleClassName.textContent = `🗓️ ${cls.name}`;
-            currentStudents = cls.students || []; // Load student for attendance
-            currentScheduleData = generateSchedule(cls, cls.offDates || []);
-            displaySchedule(currentScheduleData, cls.courseType, cls.quizletLinks, cls.attendanceLog || {});
-            displaySummary(currentScheduleData);
-            showPage('schedule-details-page');
-        }
-    });
-
-    // ADD STUDENT LOGIC
-    UI.btnAddStudent.addEventListener('click', () => {
-        UI.newStudentName.value = '';
-        UI.selectedAvatarUrl.value = AVATAR_LIST[0]; 
-        UI.avatarSelector.innerHTML = '';
-        AVATAR_LIST.forEach(url => {
-            const img = document.createElement('img');
-            img.src = url;
-            img.className = 'avatar-option';
-            if (url === AVATAR_LIST[0]) img.classList.add('selected');
-            img.addEventListener('click', () => {
-                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-                img.classList.add('selected');
-                UI.selectedAvatarUrl.value = url;
-            });
-            UI.avatarSelector.appendChild(img);
-        });
-        UI.addStudentModal.style.display = 'flex';
-    });
-
-    UI.btnCancelStudent.addEventListener('click', () => UI.addStudentModal.style.display = 'none');
-    UI.btnSaveStudent.addEventListener('click', async () => {
-        const name = UI.newStudentName.value.trim();
-        if (!name) return alert("Vui lòng nhập tên!");
-        const newStudent = {
-            id: Date.now(),
-            name: name,
-            avatar: UI.selectedAvatarUrl.value,
-            exp: 0,
-            completedTasks: []
-        };
-        currentStudents.push(newStudent);
-        await saveStudents(currentClassId, currentStudents);
-        UI.addStudentModal.style.display = 'none';
-    });
-
-    UI.btnMarkAllDone.addEventListener('click', async () => {
-        if (!confirm("Xác nhận tất cả học viên đã xong bài hôm nay (+20 EXP)?")) return;
-        const cls = allClasses.find(c => c.id === currentClassId);
-        const schedule = generateSchedule(cls, cls.offDates || []);
-        const homeReviews = calculateHomeReviews(schedule, cls.courseType);
-        const todayStr = formatDate(new Date());
-        const tasksToday = homeReviews[todayStr];
-
-        if (!tasksToday || tasksToday.length === 0) return alert("Hôm nay không có bài ôn!");
-        let count = 0;
-        currentStudents.forEach(st => {
-            if (!st.completedTasks) st.completedTasks = [];
-            tasksToday.forEach(task => {
-                if (!st.completedTasks.includes(task.taskId)) {
-                    st.completedTasks.push(task.taskId);
-                    st.exp = (st.exp || 0) + EXP_REWARD;
-                    count++;
-                }
-            });
-        });
-        if (count > 0) { await saveStudents(currentClassId, currentStudents); alert("Đã cập nhật!"); }
-        else alert("Đã hoàn thành trước đó rồi.");
-    });
-
-    UI.btnResetExp.addEventListener('click', async () => {
-        if (currentStudentIndex === null) return;
-        if (!confirm("Bạn có chắc muốn Reset điểm về 0?")) return;
-        currentStudents[currentStudentIndex].exp = 0;
-        currentStudents[currentStudentIndex].completedTasks = [];
-        await saveStudents(currentClassId, currentStudents);
-        openStudentDetail(currentStudentIndex);
-    });
-
-    UI.btnDeleteStudent.addEventListener('click', async () => {
-        if (currentStudentIndex === null) return;
-        if (!confirm("CẢNH BÁO: Xóa học viên này khỏi lớp?")) return;
-        currentStudents.splice(currentStudentIndex, 1);
-        await saveStudents(currentClassId, currentStudents);
-        UI.studentDetailModal.style.display = 'none';
-    });
-
-    // --- ATTENDANCE LOGIC ---
-    UI.scheduleBody.addEventListener('click', (e) => {
-        if (e.target.matches('.btn-attendance')) {
-            currentAttendanceDate = e.target.dataset.date;
-            const cls = allClasses.find(c => c.id === currentClassId);
-            const attendedList = cls.attendanceLog?.[currentAttendanceDate] || [];
-            
-            UI.attendanceTitle.textContent = `Điểm Danh: ${currentAttendanceDate}`;
-            UI.attendanceList.innerHTML = '';
-            
-            if (currentStudents.length === 0) {
-                UI.attendanceList.innerHTML = '<p>Lớp chưa có học viên nào.</p>';
-            } else {
-                currentStudents.forEach(st => {
-                    const div = document.createElement('div');
-                    div.className = 'attendance-item';
-                    const isChecked = attendedList.includes(st.id);
-                    div.innerHTML = `
-                        <span>${st.name}</span>
-                        <input type="checkbox" class="attendance-check" value="${st.id}" ${isChecked ? 'checked' : ''}>
-                    `;
-                    UI.attendanceList.appendChild(div);
-                });
-            }
-            UI.attendanceModal.style.display = 'flex';
-        }
-    });
-
-    UI.btnSaveAttendance.addEventListener('click', async () => {
-        const checkedBoxes = document.querySelectorAll('.attendance-check:checked');
-        const attendedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
-        
-        await saveAttendance(currentClassId, { [currentAttendanceDate]: attendedIds });
-        UI.attendanceModal.style.display = 'none';
-    });
-
-    // --- SCHEDULE MENU (PENCIL) ---
-    UI.scheduleBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        const actionDiv = btn.closest('.lesson-actions');
-        if (btn.matches('.edit-lesson-btn')) {
-            activeLessonCell = btn.closest('.lesson-name-cell');
-            activeLessonKey = actionDiv.dataset.lessonKey;
-            
-            // Thêm mục Báo bài vào menu nếu chưa có
-            const menuList = UI.pencilMenu.querySelector('ul');
-            if (!document.getElementById('menu-report-homework')) {
-                const li = document.createElement('li');
-                li.id = 'menu-report-homework';
-                li.textContent = '📢 Báo bài về nhà & Quizlet';
-                li.addEventListener('click', openHomeworkModal);
-                menuList.appendChild(li);
-            }
-
-            UI.pencilMenu.style.top = `${e.clientY}px`; UI.pencilMenu.style.left = `${e.clientX}px`;
-            UI.pencilMenu.style.display = 'block';
-        } else if (btn.matches('.quizlet-btn')) {
-            activeLessonKey = actionDiv.dataset.lessonKey;
-            UI.quizletMenu.style.top = `${e.clientY}px`; UI.quizletMenu.style.left = `${e.clientX}px`;
-            UI.quizletMenu.style.display = 'block';
-        }
-    });
-
-    // --- HOMEWORK MODAL LOGIC ---
-    const openHomeworkModal = () => {
-        UI.pencilMenu.style.display = 'none';
-        const item = currentScheduleData.find(i => i.lessonKey === activeLessonKey);
-        const cls = allClasses.find(c => c.id === currentClassId);
-        const quizletLink = cls.quizletLinks?.[activeLessonKey] || '';
-        
-        // Auto generate content
-        const template = `📢 BÁO BÀI VỀ NHÀ - LỚP ${cls.name.toUpperCase()}
-📅 Ngày học: ${item.lessonDate}
-📚 Nội dung: ${item.lessonName}
--------------------------
-📝 BÀI TẬP VỀ NHÀ:
-1. Ôn lại từ vựng và cấu trúc câu đã học.
-2. Làm bài tập trong sách Workbook trang ...
-3. Luyện tập trên Quizlet (link bên dưới).
-
-Chúc các con làm bài tốt! ❤`;
-
-        UI.homeworkContent.value = template;
-        UI.homeworkQuizlet.value = quizletLink || '(Chưa có link Quizlet)';
-        UI.homeworkModal.style.display = 'flex';
-    };
-
-    UI.btnCopyHomework.addEventListener('click', () => {
-        let content = UI.homeworkContent.value;
-        const link = UI.homeworkQuizlet.value;
-        if (link && link !== '(Chưa có link Quizlet)') {
-            content += `\n\n🔗 Link Quizlet: ${link}`;
-        }
-        navigator.clipboard.writeText(content).then(() => alert("Đã copy nội dung!"));
-    });
-
-    document.getElementById('menu-postpone-session').addEventListener('click', async () => {
-        UI.pencilMenu.style.display = 'none';
-        if (!currentClassId || !activeLessonKey) return;
-        const lessonItem = currentScheduleData.find(item => item.lessonKey === activeLessonKey);
-        if (!lessonItem) return;
-        if (!confirm(`Cho lớp nghỉ buổi ngày ${lessonItem.lessonDate}? Lịch sẽ tự lùi.`)) return;
-
-        const cls = allClasses.find(c => c.id === currentClassId);
-        if (!cls.offDates) cls.offDates = [];
-        if (!cls.offDates.includes(lessonItem.lessonDate)) cls.offDates.push(lessonItem.lessonDate);
-
-        if (isGuestMode) alert("Đã cập nhật (Khách).");
-        else await getClassesRef().doc(currentClassId).update({ offDates: cls.offDates });
-        
-        currentScheduleData = generateSchedule(cls, cls.offDates);
-        displaySchedule(currentScheduleData, cls.courseType, cls.quizletLinks, cls.attendanceLog || {});
-        displaySummary(currentScheduleData);
-    });
-
-    window.addEventListener('click', (e) => {
-        if (!e.target.closest('.context-menu') && !e.target.matches('button')) {
-            document.querySelectorAll('.context-menu').forEach(m => m.style.display = 'none');
-        }
-    });
-    UI.btnCancelDelete.addEventListener('click', () => UI.deleteModal.style.display = 'none');
-    UI.btnConfirmDelete.addEventListener('click', async () => {
-        if(isGuestMode) allClasses = allClasses.filter(c => c.id !== deletingClassId);
-        else await getClassesRef().doc(deletingClassId).delete();
-        UI.deleteModal.style.display = 'none'; loadClasses().then(renderClassList);
-    });
-    document.getElementById('show-csv-guide').addEventListener('click', () => UI.csvGuideModal.style.display = 'flex');
-    document.getElementById('btn-close-guide').addEventListener('click', () => UI.csvGuideModal.style.display = 'none');
-
-    /* =========================================
-       FIX LỖI & BỔ SUNG LOGIC (Dán đoạn này vào cuối script.js, trước dấu đóng '})')
-       ========================================= */
-
-    // 1. FIX LỖI TRA CỨU NGÀY (Chuyển đổi YYYY-MM-DD sang DD/MM/YYYY)
-    const lookupInput = document.getElementById('lookup-date');
-    if (lookupInput) {
-        lookupInput.addEventListener('change', (e) => {
-            const rawDate = e.target.value; // Dạng 2025-12-30
-            if (!rawDate) return;
-            
-            // Chuyển sang dạng 30/12/2025 để khớp dữ liệu
-            const [year, month, day] = rawDate.split('-');
-            const formattedDate = `${day}/${month}/${year}`;
-            
-            displaySummary(currentScheduleData, formattedDate);
-        });
-    }
-
-    // 2. FIX LỖI NÚT CHỈNH SỬA TÊN BÀI HỌC
-    // Xử lý khi bấm vào dòng "Chỉnh sửa tên bài" trong menu bút chì
-    const menuEditName = document.getElementById('menu-edit-name');
-    if (menuEditName) {
-        menuEditName.addEventListener('click', async () => {
-            // Ẩn menu đi
-            UI.pencilMenu.style.display = 'none';
-            
-            if (!activeLessonKey) return;
-            
-            // Tìm bài học trong dữ liệu
-            const item = currentScheduleData.find(i => i.lessonKey === activeLessonKey);
-            if (!item) return;
-
-            // Hiện hộp thoại nhập tên mới
-            const newName = prompt("Nhập tên bài học mới:", item.lessonName);
-            
-            if (newName && newName.trim() !== "") {
-                // Cập nhật giao diện ngay lập tức
-                if (activeLessonCell) {
-                    const textSpan = activeLessonCell.querySelector('.lesson-name-text');
-                    if (textSpan) textSpan.textContent = newName;
-                }
-
-                // Cập nhật vào dữ liệu lưu trữ (Firebase hoặc Local)
-                item.lessonName = newName;
-                
-                // Lưu customLessonNames vào database
-                const cls = allClasses.find(c => c.id === currentClassId);
-                if (!cls.customLessonNames) cls.customLessonNames = {};
-                cls.customLessonNames[activeLessonKey] = newName;
-
-                if (isGuestMode) {
-                    alert("Đã sửa tên (Chế độ Khách)");
-                } else {
-                    await getClassesRef().doc(currentClassId).update({
-                        customLessonNames: cls.customLessonNames
-                    });
-                }
-            }
-        });
-    }
-
-    const btnCloseManage = document.getElementById('btn-close-manage');
-if(btnCloseManage) {
-    btnCloseManage.addEventListener('click', () => {
-        document.getElementById('manage-class-modal').style.display = 'none';
-    });
-}
 });
