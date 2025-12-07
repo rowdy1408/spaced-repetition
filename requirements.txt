@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+email-validator
+google-generativeai
+python-dotenv
+requests
+gunicorn
+werkzeug
+PyPDF2
+python-docx
+psycopg2-binary

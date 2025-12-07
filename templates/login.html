@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="content-card text-center">
+            <h1 class="mb-4" style="font-family: 'Playfair Display'; font-size: 3rem;">Story Weaver</h1>
+            
+            <form method="POST">
+                <div class="mb-3 text-start">
+                    <label>Username</label>
+                    <input type="text" name="username" id="usernameInput" class="form-control" oninput="checkAdmin()" required>
+                </div>
+
+                <div class="mb-3 text-start" id="adminPinBox" style="display:none;">
+                    <label class="text-danger fw-bold"><i class="bi bi-shield-lock"></i> Admin Security PIN</label>
+                    <input type="password" name="admin_pin" class="form-control" placeholder="****">
+                </div>
+
+                <script>
+                function checkAdmin() {
+                    let user = document.getElementById('usernameInput').value;
+                    if (user.toLowerCase() === 'admin') {
+                        document.getElementById('adminPinBox').style.display = 'block';
+                    } else {
+                        document.getElementById('adminPinBox').style.display = 'none';
+                    }
+                }
+                
+                function togglePassword(fieldId, iconId) {
+                    const passwordInput = document.getElementById(fieldId);
+                    const toggleIcon = document.getElementById(iconId);
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        toggleIcon.classList.remove('bi-eye-slash');
+                        toggleIcon.classList.add('bi-eye');
+                    } else {
+                        passwordInput.type = 'password';
+                        toggleIcon.classList.remove('bi-eye');
+                        toggleIcon.classList.add('bi-eye-slash');
+                    }
+                }
+                </script>
+
+                <div class="mb-4 text-start">
+                    <label>Password</label>
+                    <div class="input-group">
+                        <input type="password" name="password" id="passwordInput" class="form-control" required style="border-right: 0;">
+                        <span class="input-group-text bg-white" style="cursor: pointer; border-left: 0;" onclick="togglePassword('passwordInput', 'toggleIcon')">
+                            <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                        </span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 py-2">Unlock Library</button>
+
+                <div class="text-end mt-2">
+                    <a href="{{ url_for('reset_password') }}" style="font-size: 0.9em; color: #7f8c8d;">Forgot Password?</a>
+                </div>
+            </form>
+
+            <p class="mt-4 border-top pt-3">
+                New storyteller? <a href="{{ url_for('register') }}" style="font-weight: bold;">Create Account</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

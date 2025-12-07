@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Story Weaver{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-paper: #fdf6e3; --sidebar-wood: #5d4037; --sidebar-text: #efebe9;
+            --text-ink: #2c3e50; --primary-btn: #d35400; --primary-hover: #a04000;
+            --accent-gold: #f1c40f; --card-bg: #ffffff; --input-bg: #fafafa;
+        }
+
+        /* Reset trang */
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow-x: hidden; /* Chặn cuộn ngang */
+        }
+
+        body { 
+            display: block; 
+            font-family: 'Quicksand', sans-serif; 
+            background-color: var(--bg-paper); 
+            color: var(--text-ink); 
+        }
+
+        /* --- 1. SIDEBAR (MÁY TÍNH) --- */
+        nav { 
+            position: fixed; 
+            top: 0; left: 0; 
+            height: 100vh;
+            width: 260px; 
+            background: var(--sidebar-wood); 
+            color: var(--sidebar-text); 
+            padding: 30px 20px; 
+            overflow-y: auto; 
+            z-index: 1000;
+            border-right: 5px solid #3e2723;
+            display: flex; flex-direction: column;
+        }
+
+        /* Ẩn nút 3 gạch trên Desktop */
+        .navbar-toggler { display: none !important; }
+        .navbar-collapse { display: block !important; } 
+        .mobile-header { text-align: center; margin-bottom: 20px; }
+
+        nav h2 { 
+            font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.8rem; 
+            color: var(--accent-gold); margin: 0;
+        }
+
+        nav a { 
+            color: var(--sidebar-text); text-decoration: none; display: block; 
+            padding: 12px 15px; font-size: 1.1rem; border-radius: 8px; margin-bottom: 8px;
+            transition: all 0.2s ease; font-weight: 500; text-align: left;
+        }
+        
+        nav a:hover, nav a.active { 
+            background-color: rgba(255,255,255,0.1); color: var(--accent-gold); transform: translateX(5px);
+        }
+        
+        nav i { margin-right: 12px; width: 25px; text-align: center; display: inline-block; }
+
+        .footer-quote {
+            margin-top: auto; padding-top: 20px; border-top: 1px dashed rgba(255,255,255,0.2); 
+            font-size: 0.85em; color: #bcaaa4; font-style: italic; text-align: center;
+        }
+
+        /* --- 2. NỘI DUNG CHÍNH (ĐẨY SANG PHẢI) --- */
+        .main-container { 
+            margin-left: 260px; 
+            padding: 40px; 
+            min-height: 100vh;
+            box-sizing: border-box; 
+            background-image: radial-gradient(#d7ccc8 1px, transparent 1px); 
+            background-size: 20px 20px;
+        }
+
+        /* --- UI COMPONENTS --- */
+        .content-card { background: var(--card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 8px 20px rgba(93,64,55,0.08); margin: 0 auto; max-width: 1100px; border: 1px solid rgba(0,0,0,0.05); }
+        .form-control, .form-select { border-radius: 12px; padding: 12px; border: 2px solid #e0e0e0; background-color: var(--input-bg); }
+        .form-control:focus { border-color: var(--primary-btn); box-shadow: 0 0 0 0.2rem rgba(211,84,0,0.15); }
+        .btn-primary { background: var(--primary-btn); border-color: var(--primary-btn); }
+        .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+        h1 { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--sidebar-wood); margin-bottom: 20px; }
+
+        .floating-btn {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; font-size: 24px;
+            z-index: 9999; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* =========================================
+           📱 GIAO DIỆN MOBILE (DƯỚI 992px)
+           ========================================= */
+        @media (max-width: 992px) {
+            nav { 
+                position: relative; 
+                width: 100%; height: auto; padding: 10px 20px;
+                border-right: none; border-bottom: 5px solid #3e2723;
+                z-index: 1001;
+            }
+            .main-container { margin-left: 0; padding: 15px; }
+            .mobile-header { 
+                display: flex; justify-content: space-between; align-items: center; 
+                margin-bottom: 0; text-align: left; 
+            }
+            nav h2 { font-size: 1.5rem; }
+            .navbar-toggler { display: block !important; }
+            .navbar-collapse { display: none !important; margin-top: 15px; } 
+            .navbar-collapse.show { display: flex !important; flex-direction: column; }
+            #sidebarMenu { background: rgba(0,0,0,0.1); margin: 0 -20px; padding: 20px; }
+            nav a:hover { transform: none; background-color: rgba(255,255,255,0.2); }
+            .content-card { padding: 20px; }
+            .floating-btn { width: 50px; height: 50px; font-size: 20px; bottom: 20px; right: 15px; }
+            .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            input, select, textarea { font-size: 16px !important; }
+        }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <nav>
+        <div class="container-fluid flex-lg-column align-items-lg-stretch p-0">
+            <div class="d-flex align-items-center mobile-header">
+                <h2 class="mb-0"><i class="bi bi-book-half"></i> Story Weaver</h2>
+                <button class="navbar-toggler border-0 text-warning" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+                    <i class="bi bi-list" style="font-size: 2rem; color: var(--primary-btn);"></i>
+                </button>
+            </div>
+
+            <div class="collapse navbar-collapse flex-column" id="sidebarMenu">
+                {% if current_user.is_authenticated %}
+                    <div class="mb-4 text-center" style="color: #f1c40f; margin-top: 20px;">
+                        <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                    </div>
+                    {% if current_user.username == 'admin' %}
+                        <a href="{{ url_for('admin_dashboard') }}" style="color: #e74c3c; font-weight: bold; border: 2px dashed #e74c3c; margin-bottom: 15px;">
+                            <i class="bi bi-shield-lock-fill"></i> Admin Panel
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('index') }}"><i class="bi bi-feather"></i> Write Story</a>
+                    <a href="{{ url_for('styles_page') }}"><i class="bi bi-pen-fill"></i> Style Bank</a>
+                    <a href="{{ url_for('saved_stories_page') }}"><i class="bi bi-collection-fill"></i> Library</a>
+                    <a href="{{ url_for('translate_page') }}"><i class="bi bi-translate"></i> Folktales</a> 
+                    <a href="{{ url_for('logout') }}" style="margin-top: auto; background: rgba(0,0,0,0.2);"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="active mt-3"><i class="bi bi-key-fill"></i> Login</a>
+                    <a href="{{ url_for('register') }}"><i class="bi bi-person-plus-fill"></i> Register</a>
+                {% endif %}
+                <div class="footer-quote">"Every story lives in the heart of a child."</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="toast align-items-center text-bg-{{ category if category != 'danger' else 'danger' }} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                            <div class="d-flex">
+                                <div class="toast-body">{{ message }}</div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        {% block content %}{% endblock %}
+    </div> 
+
+    {% if current_user.is_authenticated %}
+        <button type="button" class="btn btn-warning rounded-circle shadow floating-btn" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+            <i class="bi bi-chat-dots-fill text-white"></i>
+        </button>
+
+        <div class="modal fade" id="feedbackModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title text-white">Help & Support</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ url_for('send_feedback') }}" method="POST">
+                        <div class="modal-body">
+                            <p>Gặp lỗi hay có ý tưởng gì mới? Nhắn cho Admin nhé!</p>
+                            <textarea name="message" class="form-control" rows="5" required placeholder="Mô tả vấn đề của bạn..."></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-primary">Gửi đi</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const navLinks = document.querySelectorAll('.navbar-collapse a');
+        const menuToggle = document.getElementById('sidebarMenu');
+        const bsCollapse = new bootstrap.Collapse(menuToggle, {toggle: false});
+
+        navLinks.forEach((l) => {
+            l.addEventListener('click', () => {
+                if (menuToggle.classList.contains('show')) {
+                    bsCollapse.hide();
+                }
+            });
+        });
+
+        const toastElList = document.querySelectorAll('.toast');
+        const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl, { delay: 5000 }));
+        toastList.forEach(toast => toast.show());
+    </script>
+    
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>
