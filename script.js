@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     function generateSchedule(classData, extraHolidays = []) {
         const { startDate, type, numUnits, courseType, lessonsPerUnit, miniTestDates = [], customLessonNames = {}, uploadedLessons = [] } = classData;
-        et scheduleDays;
+        let scheduleDays;
 if (type === 'custom') {
     // Nếu là custom, lấy mảng ngày từ dữ liệu lớp (nếu có)
     scheduleDays = classData.customScheduleDays || [];
@@ -1382,3 +1382,4 @@ if (document.getElementById('class-type').value === 'custom') {
     });    
 
 });
+
