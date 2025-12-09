@@ -536,4 +536,48 @@ tr.task-done .task-date {
 textarea {
     resize: vertical; /* Cho phép kéo giãn khung nhập liệu */
     line-height: 1.5;
+
+}
+
+/* --- GIAO DIỆN NÚT CHỌN NGÀY --- */
+.day-selector {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 5px;
+}
+
+/* Ẩn ô checkbox xấu xí */
+.day-selector input[type="checkbox"] {
+    display: none;
+}
+
+/* Biến nhãn thành nút bấm */
+.day-selector label {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #f8f9fa; /* Màu nền xám nhạt */
+    color: #495057;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    text-align: center;
+    min-width: 60px;
+}
+
+/* Hiệu ứng khi di chuột */
+.day-selector label:hover {
+    background-color: #e2e6ea;
+    transform: translateY(-2px);
+}
+
+/* TRẠNG THÁI ĐÃ CHỌN (Quan trọng) */
+.day-selector label:has(input:checked) {
+    background-color: #007bff; /* Màu xanh khi chọn */
+    color: white;
+    border-color: #007bff;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
 }
