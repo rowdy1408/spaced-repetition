@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeCsvGuideBtn = document.getElementById('btn-close-guide');
     const scheduleFileInput = document.getElementById('schedule-file');
     const fileFeedback = document.getElementById('file-feedback');
+    const customDaysContainer = document.getElementById('custom-days-container');
+    const customDayCheckboxes = document.getElementsByName('custom-day');
 
     // --- Màn hình Chi tiết Lịch học ---
     const scheduleClassName = document.getElementById('schedule-class-name');
@@ -268,7 +270,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     function generateSchedule(classData, extraHolidays = []) {
         const { startDate, type, numUnits, courseType, lessonsPerUnit, miniTestDates = [], customLessonNames = {}, uploadedLessons = [] } = classData;
-        const scheduleDays = CLASS_SCHEDULE_DAYS[type];
+        et scheduleDays;
+if (type === 'custom') {
+    // Nếu là custom, lấy mảng ngày từ dữ liệu lớp (nếu có)
+    scheduleDays = classData.customScheduleDays || [];
+} else {
+    scheduleDays = CLASS_SCHEDULE_DAYS[type];
+}
+
+// Kiểm tra an toàn để tránh lỗi vòng lặp vô tận nếu không có ngày nào được chọn
+if (!scheduleDays || scheduleDays.length === 0) {
+    console.warn("Chưa chọn ngày học nào cho lịch Custom.");
+    return []; 
+};
         const offsets = courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF;
         let scheduleData = [];
 
@@ -694,6 +708,8 @@ document.addEventListener('DOMContentLoaded', () => {
         editingClassId = null;
         formTitle.textContent = '➕ Tạo Lớp Học Mới';
         classForm.reset();
+        customDaysContainer.style.display = 'none'; // Ẩn Custom đi khi tạo mới
+        customDayCheckboxes.forEach(cb => cb.checked = false); // Bỏ tick hết
         document.getElementById('start-date').valueAsDate = new Date();
         formErrorMessage.textContent = '';
         fileFeedback.textContent = 'Chưa có file nào được chọn.';
@@ -751,6 +767,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('course-type').value = selectedClass.courseType;
                 document.getElementById('class-type').value = selectedClass.type;
 
+                // --- THÊM ĐOẠN NÀY ĐỂ FILL DỮ LIỆU CUSTOM ---
+if (selectedClass.type === 'custom') {
+    customDaysContainer.style.display = 'block';
+    // Reset checkbox trước
+    customDayCheckboxes.forEach(cb => cb.checked = false);
+    // Tick lại các ngày đã lưu
+    if (selectedClass.customScheduleDays) {
+        selectedClass.customScheduleDays.forEach(day => {
+            // Tìm checkbox có value == day và tick nó
+            const cb = document.querySelector(`input[name="custom-day"][value="${day}"]`);
+            if (cb) cb.checked = true;
+        });
+    }
+} else {
+    customDaysContainer.style.display = 'none';
+}
+
                 const isFileUploaded = selectedClass.uploadedLessons?.length > 0;
                 const manualInputs = [document.getElementById('num-units'), document.getElementById('lessons-per-unit'), startDateInput, document.getElementById('mini-test-dates')];
                 
@@ -802,16 +835,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }).filter(Boolean);
         };
 
+        // --- THÊM ĐOẠN NÀY ---
+let selectedCustomDays = [];
+if (document.getElementById('class-type').value === 'custom') {
+    customDayCheckboxes.forEach(cb => {
+        if (cb.checked) selectedCustomDays.push(parseInt(cb.value));
+    });
+    
+    // Validate: Bắt buộc chọn ít nhất 1 ngày
+    if (selectedCustomDays.length === 0 && !isFileUploaded) {
+        formErrorMessage.textContent = '⚠️ Vui lòng tick chọn ít nhất một ngày học!';
+        return;
+    }
+}
+        
         let classData = {
-            name: document.getElementById('class-name').value,
-            courseType: document.getElementById('course-type').value,
-            type: document.getElementById('class-type').value,
-            uploadedLessons: uploadedLessons,
-            numUnits: isFileUploaded ? 0 : document.getElementById('num-units').value,
-            lessonsPerUnit: isFileUploaded ? 0 : document.getElementById('lessons-per-unit').value,
-            startDate: isFileUploaded ? '' : document.getElementById('start-date').value,
-            miniTestDates: isFileUploaded ? [] : parseAndFormatDates(miniTestDatesRaw),
-        };
+    name: document.getElementById('class-name').value,
+    courseType: document.getElementById('course-type').value,
+    type: document.getElementById('class-type').value,
+    customScheduleDays: selectedCustomDays, // <--- THÊM DÒNG NÀY VÀO OBJECT
+    uploadedLessons: uploadedLessons,
+    numUnits: isFileUploaded ? 0 : document.getElementById('num-units').value,
+    lessonsPerUnit: isFileUploaded ? 0 : document.getElementById('lessons-per-unit').value,
+    startDate: isFileUploaded ? '' : document.getElementById('start-date').value,
+    miniTestDates: isFileUploaded ? [] : parseAndFormatDates(miniTestDatesRaw),
+};
 
         try {
             if (editingClassId) {
@@ -1155,12 +1203,25 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCancelDelete.addEventListener('click', () => deleteModal.style.display = 'none');
 
     classTypeInput.addEventListener('change', () => {
+    // 1. Logic hiện/ẩn Custom Days
+    if (classTypeInput.value === 'custom') {
+        customDaysContainer.style.display = 'block';
+        formErrorMessage.textContent = ''; // Reset lỗi khi chuyển sang custom
+    } else {
+        customDaysContainer.style.display = 'none';
+        
+        // 2. Logic kiểm tra ngày khai giảng cho các lớp Cố định (Logic cũ)
         const allowedDays = CLASS_SCHEDULE_DAYS[classTypeInput.value];
-        const selectedDate = new Date(startDateInput.value + 'T00:00:00');
-        if (startDateInput.value && !allowedDays.includes(selectedDate.getDay())) {
-            formErrorMessage.textContent = 'Ngày khai giảng không khớp với mô hình lớp học.';
-        } else { formErrorMessage.textContent = ''; }
-    });
+        if (startDateInput.value) {
+            const selectedDate = new Date(startDateInput.value + 'T00:00:00');
+            if (!allowedDays.includes(selectedDate.getDay())) {
+                formErrorMessage.textContent = 'Lưu ý: Ngày khai giảng không trùng với lịch học cố định (nhưng hệ thống vẫn sẽ tìm ngày học gần nhất).';
+            } else {
+                formErrorMessage.textContent = '';
+            }
+        }
+    }
+});
     startDateInput.addEventListener('change', () => classTypeInput.dispatchEvent(new Event('change')));
 
     showCsvGuideBtn.addEventListener('click', () => csvGuideModal.style.display = 'flex');
@@ -1319,4 +1380,5 @@ document.addEventListener('DOMContentLoaded', () => {
     reportModal.addEventListener('click', (e) => {
         if (e.target === reportModal) reportModal.style.display = 'none';
     });    
+
 });
