@@ -848,6 +848,40 @@ if (document.getElementById('class-type').value === 'custom') {
         return;
     }
 }
+        if (!isFileUploaded) {
+    const startDateVal = document.getElementById('start-date').value;
+    
+    if (startDateVal) {
+        // 1. Xác định danh sách ngày học hợp lệ (Mảng các số 0-6)
+        let allowedDays = [];
+        const typeValue = document.getElementById('class-type').value;
+        
+        if (typeValue === 'custom') {
+            allowedDays = selectedCustomDays;
+        } else {
+            allowedDays = CLASS_SCHEDULE_DAYS[typeValue];
+        }
+
+        // 2. Lấy thứ của ngày khai giảng người dùng nhập
+        // Thêm 'T00:00:00' để đảm bảo lấy đúng ngày theo giờ địa phương
+        const selectedDate = new Date(startDateVal + 'T00:00:00'); 
+        const dayOfWeek = selectedDate.getDay(); // 0 là CN, 1 là T2...
+
+        // 3. So sánh: Nếu thứ của ngày khai giảng KHÔNG nằm trong lịch học -> Chặn luôn
+        if (!allowedDays.includes(dayOfWeek)) {
+            // Tạo tên thứ để hiển thị thông báo cho thân thiện
+            const dayNames = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+            const selectedDayName = dayNames[dayOfWeek];
+            
+            // Hiển thị lỗi
+            formErrorMessage.textContent = `⛔ Lỗi logic: Ngày khai giảng bạn chọn là ${selectedDayName}, nhưng lịch học của lớp không bao gồm ngày này!`;
+            formErrorMessage.style.color = 'red';
+            formErrorMessage.style.fontWeight = 'bold';
+            
+            return; // 🛑 DỪNG LẠI NGAY LẬP TỨC, KHÔNG LƯU DỮ LIỆU
+        }
+    }
+}
         
         let classData = {
     name: document.getElementById('class-name').value,
@@ -1382,4 +1416,5 @@ if (document.getElementById('class-type').value === 'custom') {
     });    
 
 });
+
 
