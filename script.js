@@ -136,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CLASS_SCHEDULE_DAYS = { '2-4': [1, 3], '3-5': [2, 4], '4-6': [3, 5], '7-cn': [6, 0], '2-4-6': [1, 3, 5], '3-5-7': [2, 4, 6] };
     const REVIEW_OFFSETS_SMF = [1, 3, 6, 10];
     const REVIEW_OFFSETS_KET = [1, 2, 4, 8, 16];
+    const REVIEW_OFFSETS_IELTS = [1, 3, 7, 14];
     const VIETNAMESE_HOLIDAYS_FIXED = ['01-01', '04-30', '05-01', '09-02'];
     const LUNAR_NEW_YEAR_DATES = [
         '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01',
@@ -245,9 +246,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         allClasses.forEach(cls => {
             const classItem = document.createElement('div');
-            classItem.className = 'class-item';
-            let courseTypeName = cls.courseType === 'ket-pet' ? 'KET-PET' : 'Starters-Movers-Flyers';
-            const lessonCount = cls.uploadedLessons?.length > 0 ? cls.uploadedLessons.length : (cls.numUnits * cls.lessonsPerUnit);
+    classItem.className = 'class-item';
+    
+    // --- BẮT ĐẦU ĐOẠN THAY THẾ ---
+    let courseTypeName = 'Starters-Movers-Flyers'; // Mặc định
+    
+    if (cls.courseType === 'ket-pet') {
+        courseTypeName = 'KET-PET';
+    } else if (cls.courseType === 'ielts') {
+        courseTypeName = 'IELTS (1-3-7-14)'; // Đặt tên hiển thị cho đẹp
+    }
+    // --- KẾT THÚC ĐOẠN THAY THẾ ---
+
+    const lessonCount = cls.uploadedLessons?.length > 0 ? cls.uploadedLessons.length : (cls.numUnits * cls.lessonsPerUnit);
             
             classItem.innerHTML = `
                 <div class="class-info" data-id="${cls.id}">
@@ -283,7 +294,14 @@ if (!scheduleDays || scheduleDays.length === 0) {
     console.warn("Chưa chọn ngày học nào cho lịch Custom.");
     return []; 
 };
-        const offsets = courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF;
+        let offsets;
+        if (courseType === 'ket-pet') {
+            offsets = REVIEW_OFFSETS_KET; // [1, 2, 4, 8, 16]
+        } else if (courseType === 'ielts') {
+            offsets = REVIEW_OFFSETS_IELTS; // [1, 3, 7, 14]
+        } else {
+            offsets = REVIEW_OFFSETS_SMF; // [1, 3, 6, 10] (Mặc định)
+        }
         let scheduleData = [];
 
         if (uploadedLessons && uploadedLessons.length > 0) {
@@ -568,7 +586,14 @@ if (!scheduleDays || scheduleDays.length === 0) {
         const selectedClass = allClasses.find(c => c.id === currentClassId);
         const baseSchedule = generateSchedule(selectedClass); 
         const dailyStatus = student.dailyStatus || {}; 
-        const currentReviewOffsets = selectedClass.courseType === 'ket-pet' ? REVIEW_OFFSETS_KET : REVIEW_OFFSETS_SMF; 
+        let currentReviewOffsets;
+        if (selectedClass.courseType === 'ket-pet') {
+            currentReviewOffsets = REVIEW_OFFSETS_KET;
+        } else if (selectedClass.courseType === 'ielts') {
+            currentReviewOffsets = REVIEW_OFFSETS_IELTS; // Sử dụng mốc [1, 3, 7, 14] để tạo checklist
+        } else {
+            currentReviewOffsets = REVIEW_OFFSETS_SMF;
+        } 
         let allTasks = [];
 
         baseSchedule.forEach(item => {
@@ -1308,9 +1333,14 @@ if (document.getElementById('class-type').value === 'custom') {
 
             // Lấy cấu hình ngày ôn dựa trên loại lớp (KET/PET hay SMF)
             const selectedClass = allClasses.find(c => c.id === currentClassId);
-            const offsets = (selectedClass && selectedClass.courseType === 'ket-pet') 
-                            ? REVIEW_OFFSETS_KET  // [1, 2, 4, 8, 16]
-                            : REVIEW_OFFSETS_SMF; // [1, 3, 6, 10]
+            let offsets;
+            if (selectedClass && selectedClass.courseType === 'ket-pet') {
+                offsets = REVIEW_OFFSETS_KET;
+            } else if (selectedClass && selectedClass.courseType === 'ielts') {
+                offsets = REVIEW_OFFSETS_IELTS; // [1, 3, 7, 14]
+            } else {
+                offsets = REVIEW_OFFSETS_SMF;
+            }
 
             // Quét tất cả các bài đã học để tính ngày rơi điểm rơi phong độ
             currentScheduleData.forEach(item => {
@@ -1416,5 +1446,6 @@ if (document.getElementById('class-type').value === 'custom') {
     });    
 
 });
+
 
 
